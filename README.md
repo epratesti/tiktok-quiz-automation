@@ -164,7 +164,35 @@ Coloque musicas em `music/` (`.mp3`, `.wav`, `.m4a`, `.ogg`) para trilha aleator
 
 ## Sessao Playwright do TikTok
 
-O upload automatico requer uma sessao Playwright previamente autenticada em `data/tiktok_state.json`. Crie essa sessao manualmente em ambiente seguro e salve o estado do navegador. No GitHub Actions, converta para base64 e salve em `TIKTOK_STORAGE_STATE_B64`.
+O upload automatico requer uma sessao Playwright previamente autenticada em `data/tiktok_state.json`. O sistema nao tenta burlar captcha, 2FA, desafio de login ou limites do TikTok. Voce faz login uma vez em um navegador local e o GitHub Actions reutiliza essa sessao.
+
+Crie a sessao local:
+
+```bash
+python scripts/setup_tiktok_session.py
+```
+
+No navegador que abrir, faca login no TikTok, resolva 2FA/captcha se aparecer, entre na pagina de upload e pressione ENTER no terminal.
+
+Gere o valor para o GitHub Secret:
+
+```bash
+python scripts/encode_tiktok_state.py
+```
+
+No GitHub, crie/atualize:
+
+```env
+TIKTOK_STORAGE_STATE_B64=valor_base64_gerado
+TIKTOK_UPLOAD_ENABLED=true
+DRY_RUN=false
+```
+
+Se voce tiver GitHub CLI autenticado, pode configurar os secrets de upload com:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/set_github_upload_secrets.ps1
+```
 
 Mantenha `DRY_RUN=true` ate validar os videos e a conta.
 

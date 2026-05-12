@@ -67,6 +67,14 @@ jobs:
             echo "No TikTok session configured. Continuing in dry-run/no-upload mode."
           fi
 
+      - name: Validate TikTok upload config
+        run: |
+          if [ "$TIKTOK_UPLOAD_ENABLED" = "true" ] && [ "$DRY_RUN" = "false" ] && [ ! -s data/tiktok_state.json ]; then
+            echo "TIKTOK_UPLOAD_ENABLED=true, mas TIKTOK_STORAGE_STATE_B64 nao foi configurado."
+            echo "Rode scripts/setup_tiktok_session.py localmente e salve o secret TIKTOK_STORAGE_STATE_B64."
+            exit 1
+          fi
+
       - name: Generate and optionally publish videos
         run: python main.py --videos 2
 
