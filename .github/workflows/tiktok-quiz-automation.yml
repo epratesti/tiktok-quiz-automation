@@ -1,0 +1,69 @@
+name: TikTok Quiz Automation
+
+on:
+  schedule:
+    # 00, 06, 12 e 18 UTC = 21, 03, 09 e 15 no horario de Brasilia.
+    - cron: "0 0,6,12,18 * * *"
+  workflow_dispatch:
+
+jobs:
+  generate-and-publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+
+    env:
+      DRY_RUN: ${{ secrets.DRY_RUN || 'true' }}
+      VIDEOS_PER_RUN: "2"
+      VOICE_PROVIDER: ${{ secrets.VOICE_PROVIDER || 'edge' }}
+      EDGE_TTS_VOICE: ${{ secrets.EDGE_TTS_VOICE || 'pt-BR-AntonioNeural' }}
+      ELEVENLABS_API_KEY: ${{ secrets.ELEVENLABS_API_KEY }}
+      ELEVENLABS_VOICE_ID: ${{ secrets.ELEVENLABS_VOICE_ID }}
+      OPENAI_ENABLED: ${{ secrets.OPENAI_ENABLED || 'false' }}
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      OPENAI_MODEL: ${{ secrets.OPENAI_MODEL || 'gpt-4o-mini' }}
+      OPENTRIVIA_ENABLED: ${{ secrets.OPENTRIVIA_ENABLED || 'true' }}
+      TIKTOK_UPLOAD_ENABLED: ${{ secrets.TIKTOK_UPLOAD_ENABLED || 'false' }}
+      TIKTOK_USERNAME: ${{ secrets.TIKTOK_USERNAME }}
+      TIKTOK_STORAGE_STATE: data/tiktok_state.json
+      PLAYWRIGHT_HEADLESS: "true"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          python -m playwright install --with-deps chromium
+
+      - name: Restore TikTok session
+        if: ${{ secrets.TIKTOK_STORAGE_STATE_B64 != '' }}
+        run: |
+          mkdir -p data
+          echo "${{ secrets.TIKTOK_STORAGE_STATE_B64 }}" | base64 -d > data/tiktok_state.json
+
+      - name: Generate and optionally publish videos
+        run: python main.py --videos 2
+
+      - name: Upload generated artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: tiktok-quiz-artifacts
+          path: |
+            output/
+            logs/
+            data/analytics.jsonl
+          if-no-files-found: ignore
