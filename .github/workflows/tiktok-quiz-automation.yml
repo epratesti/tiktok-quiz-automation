@@ -49,10 +49,15 @@ jobs:
           python -m playwright install --with-deps chromium
 
       - name: Restore TikTok session
-        if: ${{ secrets.TIKTOK_STORAGE_STATE_B64 != '' }}
+        env:
+          TIKTOK_STORAGE_STATE_B64: ${{ secrets.TIKTOK_STORAGE_STATE_B64 }}
         run: |
-          mkdir -p data
-          echo "${{ secrets.TIKTOK_STORAGE_STATE_B64 }}" | base64 -d > data/tiktok_state.json
+          if [ -n "$TIKTOK_STORAGE_STATE_B64" ]; then
+            mkdir -p data
+            echo "$TIKTOK_STORAGE_STATE_B64" | base64 -d > data/tiktok_state.json
+          else
+            echo "No TikTok session configured. Continuing in dry-run/no-upload mode."
+          fi
 
       - name: Generate and optionally publish videos
         run: python main.py --videos 2
