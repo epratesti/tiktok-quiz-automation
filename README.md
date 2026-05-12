@@ -7,7 +7,7 @@ Sistema Python para gerar automaticamente videos verticais de quiz em estilo Tik
 O projeto funciona como um pipeline modular:
 
 1. `generate_questions.py` busca perguntas em cascata: base local JSON, Open Trivia DB, OpenAI e gerador proprio. O historico em `data/question_history.json` evita repeticoes recentes.
-2. `generate_voice.py` monta o roteiro cronometrado e gera narracao por Edge TTS, gTTS ou ElevenLabs. O padrao usa voz neural brasileira, texto com acentos e ajustes leves de ritmo para soar menos robotico. Se a rede ou TTS falhar, o pipeline continua com silencio no trecho afetado.
+2. `generate_voice.py` monta o roteiro cronometrado e gera narracao por Edge TTS, ElevenLabs ou gTTS. O texto da fala e humanizado antes do TTS: numeros viram palavras, expressoes como `12 x 12` viram fala natural, e `gTTS` fica como ultimo fallback por ser mais robotico.
 3. `create_video.py` renderiza video vertical 9:16 com MoviePy, Pillow e Pydub: fundo procedural neon ou assets locais, texto grande, alternativas alinhadas, contador lateral, barra de progresso, suspense, revelacao e CTA.
 4. `subtitles.py` cria legendas `.srt` sincronizadas a partir do roteiro.
 5. `hashtags.py` cria legenda e hashtags por categoria.
@@ -61,7 +61,7 @@ Secrets recomendados:
 - `TIKTOK_UPLOAD_ENABLED`: `false` ate testar tudo.
 - `TIKTOK_STORAGE_STATE_B64`: conteudo base64 do arquivo de sessao Playwright.
 - `OPENAI_API_KEY`, `OPENAI_ENABLED`, `OPENAI_MODEL`.
-- `VOICE_PROVIDER`, `EDGE_TTS_VOICE`, `EDGE_TTS_RATE`, `EDGE_TTS_PITCH`, `ELEVENLABS_API_KEY`, `ELEVENLABS_VOICE_ID` se usar ElevenLabs.
+- `VOICE_PROVIDER`, `EDGE_TTS_VOICE`, `EDGE_TTS_RATE`, `EDGE_TTS_PITCH`, `ELEVENLABS_API_KEY`, `ELEVENLABS_VOICE_ID` e ajustes ElevenLabs se usar voz premium.
 
 ## Arquivos
 
@@ -132,6 +132,10 @@ Para usar ElevenLabs:
 VOICE_PROVIDER=elevenlabs
 ELEVENLABS_API_KEY=...
 ELEVENLABS_VOICE_ID=...
+ELEVENLABS_STABILITY=0.38
+ELEVENLABS_SIMILARITY=0.82
+ELEVENLABS_STYLE=0.42
+ELEVENLABS_SPEAKER_BOOST=true
 ```
 
 ## Como executar

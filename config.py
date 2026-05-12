@@ -72,6 +72,10 @@ class VoiceSettings:
     gtts_tld: str = os.getenv("GTTS_TLD", "com.br")
     elevenlabs_voice_id: str = os.getenv("ELEVENLABS_VOICE_ID", "")
     elevenlabs_model: str = os.getenv("ELEVENLABS_MODEL", "eleven_multilingual_v2")
+    elevenlabs_stability: float = env_float("ELEVENLABS_STABILITY", 0.38)
+    elevenlabs_similarity: float = env_float("ELEVENLABS_SIMILARITY", 0.82)
+    elevenlabs_style: float = env_float("ELEVENLABS_STYLE", 0.42)
+    elevenlabs_speaker_boost: bool = env_bool("ELEVENLABS_SPEAKER_BOOST", True)
     volume_db: float = env_float("VOICE_VOLUME_DB", 1.0)
 
 

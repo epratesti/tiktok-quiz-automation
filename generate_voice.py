@@ -3,12 +3,14 @@ from __future__ import annotations
 import asyncio
 import logging
 import random
+import re
 import subprocess
 from dataclasses import dataclass
 from pathlib import Path
 
 import requests
 from pydub import AudioSegment
+from pydub.effects import compress_dynamic_range, normalize
 
 from config import configure_audio_tools, find_ffmpeg_binary, settings
 from generate_questions import QuizQuestion
@@ -43,6 +45,82 @@ TEXT_REPLACEMENTS = {
 }
 
 
+NUMBERS_PT = {
+    0: "zero",
+    1: "um",
+    2: "dois",
+    3: "três",
+    4: "quatro",
+    5: "cinco",
+    6: "seis",
+    7: "sete",
+    8: "oito",
+    9: "nove",
+    10: "dez",
+    11: "onze",
+    12: "doze",
+    13: "treze",
+    14: "quatorze",
+    15: "quinze",
+    16: "dezesseis",
+    17: "dezessete",
+    18: "dezoito",
+    19: "dezenove",
+    20: "vinte",
+    30: "trinta",
+    40: "quarenta",
+    50: "cinquenta",
+    60: "sessenta",
+    70: "setenta",
+    80: "oitenta",
+    90: "noventa",
+    100: "cem",
+}
+
+
+def number_to_pt(value: int) -> str:
+    if value in NUMBERS_PT:
+        return NUMBERS_PT[value]
+    if 21 <= value <= 99:
+        tens = value // 10 * 10
+        ones = value % 10
+        return f"{NUMBERS_PT[tens]} e {NUMBERS_PT[ones]}"
+    if 101 <= value <= 199:
+        return f"cento e {number_to_pt(value - 100)}"
+    if 200 <= value <= 999:
+        hundreds = {
+            2: "duzentos",
+            3: "trezentos",
+            4: "quatrocentos",
+            5: "quinhentos",
+            6: "seiscentos",
+            7: "setecentos",
+            8: "oitocentos",
+            9: "novecentos",
+        }
+        remainder = value % 100
+        base = hundreds[value // 100]
+        return base if remainder == 0 else f"{base} e {number_to_pt(remainder)}"
+    return str(value)
+
+
+def expand_numbers_for_speech(text: str) -> str:
+    def replace_math(match: re.Match[str]) -> str:
+        left = number_to_pt(int(match.group(1)))
+        right = number_to_pt(int(match.group(2)))
+        return f"{left} vezes {right}"
+
+    def replace_percent(match: re.Match[str]) -> str:
+        return f"{number_to_pt(int(match.group(1)))} por cento"
+
+    def replace_plain(match: re.Match[str]) -> str:
+        return number_to_pt(int(match.group(0)))
+
+    text = re.sub(r"\b(\d{1,3})\s*x\s*(\d{1,3})\b", replace_math, text, flags=re.IGNORECASE)
+    text = re.sub(r"\b(\d{1,3})%", replace_percent, text)
+    return re.sub(r"\b\d{1,3}\b", replace_plain, text)
+
+
 def natural_voice_text(text: str) -> str:
     """Small PT-BR cleanup layer so neural TTS reads like speech, not raw data."""
     cleaned = text
@@ -65,7 +143,7 @@ def natural_voice_text(text: str) -> str:
     cleaned = cleaned.replace("Destes e", "Destes é")
     cleaned = cleaned.replace("destes e", "destes é")
     cleaned = cleaned.replace("A resposta correta e", "A resposta correta é")
-    return cleaned
+    return expand_numbers_for_speech(cleaned)
 
 
 @dataclass
@@ -86,10 +164,10 @@ class VoiceGenerator:
         return [
             {"start": 0.2, "end": 4.4, "text": f"{hook}. Presta atenção: essa vale ponto."},
             {"start": 5.2, "end": 11.0, "text": question_text},
-            {"start": 11.4, "end": 16.0, "text": f"Letra A. {options[0]}."},
-            {"start": 16.2, "end": 20.8, "text": f"Letra B. {options[1]}."},
-            {"start": 21.0, "end": 25.6, "text": f"Letra C. {options[2]}."},
-            {"start": 25.8, "end": 30.4, "text": f"Letra D. {options[3]}."},
+            {"start": 11.4, "end": 16.0, "text": f"Opção A: {options[0]}."},
+            {"start": 16.2, "end": 20.8, "text": f"Opção B: {options[1]}."},
+            {"start": 21.0, "end": 25.6, "text": f"Opção C: {options[2]}."},
+            {"start": 25.8, "end": 30.4, "text": f"Opção D: {options[3]}."},
             {"start": 45.2, "end": 53.5, "text": "Pensou bem? Últimos segundos... olha a resposta."},
             {
                 "start": 55.0,
@@ -110,7 +188,7 @@ class VoiceGenerator:
             try:
                 self._generate_segment(item["text"], segment_path)
                 segment = self._load_segment(segment_path)
-                segment += settings.voice.volume_db
+                segment = self._polish_voice_segment(segment + settings.voice.volume_db)
             except Exception as exc:  # noqa: BLE001 - TTS fallback keeps render alive
                 logger.warning("TTS falhou, usando silencio para segmento %s: %s", index, exc)
                 segment = AudioSegment.silent(duration=max(1200, int((item["end"] - item["start"]) * 1000)))
@@ -118,6 +196,12 @@ class VoiceGenerator:
 
         base.export(output_path, format="wav")
         return NarrationResult(audio_path=output_path, script=script, duration=settings.video.duration)
+
+    def _polish_voice_segment(self, segment: AudioSegment) -> AudioSegment:
+        segment = segment.strip_silence(silence_len=180, silence_thresh=-42, padding=80)
+        segment = compress_dynamic_range(segment, threshold=-18.0, ratio=2.2, attack=6.0, release=80.0)
+        segment = normalize(segment, headroom=1.5)
+        return segment.fade_in(20).fade_out(45)
 
     def _load_segment(self, segment_path: Path) -> AudioSegment:
         try:
@@ -151,7 +235,7 @@ class VoiceGenerator:
 
     def _provider_chain(self) -> list[str]:
         primary = settings.voice.provider.lower().strip()
-        ordered = [primary, "gtts", "edge", "elevenlabs"]
+        ordered = [primary, "elevenlabs", "edge", "gtts"]
         chain: list[str] = []
         for provider in ordered:
             if provider not in chain:
@@ -202,7 +286,12 @@ class VoiceGenerator:
             json={
                 "text": text,
                 "model_id": settings.voice.elevenlabs_model,
-                "voice_settings": {"stability": 0.45, "similarity_boost": 0.8, "style": random.uniform(0.1, 0.35)},
+                "voice_settings": {
+                    "stability": settings.voice.elevenlabs_stability,
+                    "similarity_boost": settings.voice.elevenlabs_similarity,
+                    "style": min(1.0, max(0.0, settings.voice.elevenlabs_style + random.uniform(-0.05, 0.05))),
+                    "use_speaker_boost": settings.voice.elevenlabs_speaker_boost,
+                },
             },
             timeout=30,
         )
