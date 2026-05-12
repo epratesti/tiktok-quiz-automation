@@ -65,9 +65,9 @@ class VideoSettings:
 class VoiceSettings:
     provider: str = os.getenv("VOICE_PROVIDER", "edge").lower()
     language: str = os.getenv("VOICE_LANGUAGE", "pt-BR")
-    edge_voice: str = os.getenv("EDGE_TTS_VOICE", "pt-BR-FranciscaNeural")
-    edge_rate: str = os.getenv("EDGE_TTS_RATE", "+8%")
-    edge_pitch: str = os.getenv("EDGE_TTS_PITCH", "+4Hz")
+    edge_voice: str = os.getenv("EDGE_TTS_VOICE", "pt-BR-ThalitaMultilingualNeural")
+    edge_rate: str = os.getenv("EDGE_TTS_RATE", "+5%")
+    edge_pitch: str = os.getenv("EDGE_TTS_PITCH", "+0Hz")
     edge_volume: str = os.getenv("EDGE_TTS_VOLUME", "+0%")
     gtts_tld: str = os.getenv("GTTS_TLD", "com.br")
     elevenlabs_voice_id: str = os.getenv("ELEVENLABS_VOICE_ID", "")
@@ -125,25 +125,25 @@ class AppSettings:
         default_factory=lambda: [
             "conhecimentos gerais",
             "geografia",
-            "historia",
+            "história",
             "curiosidades",
-            "ciencia",
+            "ciência",
             "filmes",
             "futebol",
-            "paises",
+            "países",
             "bandeiras",
-            "matematica rapida",
-            "perguntas impossiveis",
+            "matemática",
+            "perguntas impossíveis",
             "90% erram",
-            "so genios acertam",
-            "voce consegue",
+            "só gênios acertam",
+            "você consegue",
         ]
     )
     ctas: list[str] = field(
         default_factory=lambda: [
-            "Comente quantas voce acertou",
+            "Comente quantas você acertou",
             "Segue para mais quizzes",
-            "Desafie um amigo nos comentarios",
+            "Desafie um amigo nos comentários",
             "Comente sua resposta antes do final",
         ]
     )

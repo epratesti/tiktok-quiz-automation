@@ -43,49 +43,49 @@ class QuizQuestion:
 
 HOOKS = [
     "90% das pessoas erram essa",
-    "So genios acertam em 10 segundos",
-    "Voce consegue responder sem pausar?",
-    "Essa parece facil, mas engana muita gente",
-    "Teste rapido para o seu cerebro",
-    "Se voce acertar, comenta no final",
+    "Só gênios acertam em 10 segundos",
+    "Você consegue responder sem pausar?",
+    "Essa parece fácil, mas engana muita gente",
+    "Teste relâmpago para o seu cérebro",
+    "Se você acertar, comenta no final",
 ]
 
 
 SYNTHETIC_BANK = [
     {
-        "category": "matematica rapida",
-        "question": "Quanto e 15% de 200?",
+        "category": "matemática",
+        "question": "Quanto é 15% de 200?",
         "options": ["15", "20", "30", "45"],
         "correct_index": 2,
-        "explanation": "15% de 200 e 30.",
+        "explanation": "15% de 200 é 30.",
     },
     {
         "category": "geografia",
-        "question": "Qual pais tem formato parecido com uma bota?",
-        "options": ["Italia", "Portugal", "Chile", "Grecia"],
+        "question": "Qual país tem formato parecido com uma bota?",
+        "options": ["Itália", "Portugal", "Chile", "Grécia"],
         "correct_index": 0,
-        "explanation": "A Italia e famosa pelo formato de bota no mapa.",
+        "explanation": "A Itália é famosa pelo formato de bota no mapa.",
     },
     {
         "category": "curiosidades",
         "question": "Qual animal aparece no logo da Ferrari?",
-        "options": ["Touro", "Cavalo", "Leao", "Aguia"],
+        "options": ["Touro", "Cavalo", "Leão", "Águia"],
         "correct_index": 1,
-        "explanation": "O simbolo da Ferrari e um cavalo empinado.",
+        "explanation": "O símbolo da Ferrari é um cavalo empinado.",
     },
     {
         "category": "historia",
         "question": "Quem foi o primeiro imperador do Brasil?",
-        "options": ["Dom Pedro I", "Dom Pedro II", "Tiradentes", "Getulio Vargas"],
+        "options": ["Dom Pedro I", "Dom Pedro II", "Tiradentes", "Getúlio Vargas"],
         "correct_index": 0,
         "explanation": "Dom Pedro I foi o primeiro imperador do Brasil.",
     },
     {
-        "category": "ciencia",
-        "question": "Qual planeta e conhecido como planeta vermelho?",
-        "options": ["Venus", "Marte", "Jupiter", "Mercurio"],
+        "category": "ciência",
+        "question": "Qual planeta é conhecido como planeta vermelho?",
+        "options": ["Vênus", "Marte", "Júpiter", "Mercúrio"],
         "correct_index": 1,
-        "explanation": "Marte tem aparencia avermelhada por causa do oxido de ferro.",
+        "explanation": "Marte tem aparência avermelhada por causa do óxido de ferro.",
     },
 ]
 
@@ -185,7 +185,7 @@ class QuestionGenerator:
                     question=self._pt_hint(html.unescape(item["question"])),
                     options=options,
                     correct_index=options.index(correct),
-                    explanation=f"A resposta correta e {correct}.",
+                    explanation=f"A resposta correta é {correct}.",
                     source="opentrivia",
                     difficulty=item.get("difficulty", "medio"),
                 )
@@ -204,9 +204,9 @@ class QuestionGenerator:
         client = OpenAI(api_key=settings.ai.openai_api_key)
         category = random.choice(settings.categories)
         prompt = (
-            "Gere perguntas de quiz viral para TikTok em portugues brasileiro. "
+            "Gere perguntas de quiz viral para TikTok em português brasileiro. "
             "Cada pergunta deve ser curta, ter 4 alternativas, uma resposta correta, "
-            "explicacao curta e hook de retencao. Responda somente JSON valido no formato "
+            "explicação curta e hook de retenção. Responda somente JSON válido no formato "
             '{"questions":[{"category":"...","hook":"...","question":"...",'
             '"options":["A","B","C","D"],"correct_index":0,"explanation":"..."}]}. '
             f"Categoria preferida: {category}. Quantidade: {min(limit, 6)}."
@@ -239,12 +239,12 @@ class QuestionGenerator:
             options = sorted(set(options))
         return QuizQuestion(
             id=self._stable_id(f"{a}x{b}"),
-            category="matematica rapida",
+            category="matemática",
             hook=random.choice(HOOKS),
-            question=f"Quanto e {a} x {b}?",
+            question=f"Quanto é {a} x {b}?",
             options=[str(option) for option in options[:4]],
             correct_index=options[:4].index(correct),
-            explanation=f"{a} vezes {b} e {correct}.",
+            explanation=f"{a} vezes {b} é {correct}.",
             source="synthetic",
             difficulty="facil",
         )
@@ -264,7 +264,7 @@ class QuestionGenerator:
             question=question,
             options=options,
             correct_index=correct_index,
-            explanation=str(item.get("explanation") or f"A resposta correta e {options[correct_index]}.").strip(),
+            explanation=str(item.get("explanation") or f"A resposta correta é {options[correct_index]}.").strip(),
             source=source,
             difficulty=str(item.get("difficulty") or "medio"),
         )

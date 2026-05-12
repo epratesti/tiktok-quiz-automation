@@ -119,7 +119,7 @@ class VideoCreator:
         )
         clips.append(self._image_clip(reveal, 55, 5, ("center", 520)))
 
-        cta = text_panel("Comente quantas voce acertou", width - 140, 54, theme_name, padding=30)
+        cta = text_panel("Comente quantas você acertou", width - 140, 54, theme_name, padding=30)
         clips.append(self._image_clip(cta, 55.3, 4.7, ("center", 1320)))
 
         progress = VideoClip(lambda t: progress_frame(t, duration, width, theme_name), duration=duration)

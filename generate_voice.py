@@ -17,6 +17,57 @@ logger = logging.getLogger(__name__)
 configure_audio_tools()
 
 
+TEXT_REPLACEMENTS = {
+    "Voce": "Você",
+    "voce": "você",
+    "So ": "Só ",
+    "so ": "só ",
+    "genios": "gênios",
+    "facil": "fácil",
+    "cerebro": "cérebro",
+    "Ultimos": "Últimos",
+    "ultimos": "últimos",
+    "numero": "número",
+    "pais": "país",
+    "paises": "países",
+    "Italia": "Itália",
+    "Grecia": "Grécia",
+    "Venus": "Vênus",
+    "Jupiter": "Júpiter",
+    "Mercurio": "Mercúrio",
+    "oxido": "óxido",
+    "simbolo": "símbolo",
+    "aparencia": "aparência",
+    "nao": "não",
+    "comentarios": "comentários",
+}
+
+
+def natural_voice_text(text: str) -> str:
+    """Small PT-BR cleanup layer so neural TTS reads like speech, not raw data."""
+    cleaned = text
+    for source, target in TEXT_REPLACEMENTS.items():
+        cleaned = cleaned.replace(source, target)
+    cleaned = cleaned.replace("responder rapido", "responder no impulso")
+    cleaned = cleaned.replace("responder rápido", "responder no impulso")
+    cleaned = cleaned.replace("Teste rapido", "Teste relâmpago")
+    cleaned = cleaned.replace("teste rapido", "teste relâmpago")
+    cleaned = cleaned.replace("acerta rapido", "acerta de primeira")
+    cleaned = cleaned.replace("acerta rápido", "acerta de primeira")
+    cleaned = cleaned.replace("rapido", "relâmpago")
+    cleaned = cleaned.replace("rápido", "relâmpago")
+    cleaned = cleaned.replace("Qual e", "Qual é")
+    cleaned = cleaned.replace("qual e", "qual é")
+    cleaned = cleaned.replace("Quanto e", "Quanto é")
+    cleaned = cleaned.replace("quanto e", "quanto é")
+    cleaned = cleaned.replace("Este e", "Este é")
+    cleaned = cleaned.replace("este e", "este é")
+    cleaned = cleaned.replace("Destes e", "Destes é")
+    cleaned = cleaned.replace("destes e", "destes é")
+    cleaned = cleaned.replace("A resposta correta e", "A resposta correta é")
+    return cleaned
+
+
 @dataclass
 class NarrationResult:
     audio_path: Path
@@ -26,20 +77,24 @@ class NarrationResult:
 
 class VoiceGenerator:
     def build_script(self, question: QuizQuestion, cta: str) -> list[dict]:
-        options = question.options
+        hook = natural_voice_text(question.hook)
+        question_text = natural_voice_text(question.question)
+        options = [natural_voice_text(option) for option in question.options]
+        answer = natural_voice_text(question.correct_answer)
+        cta_text = natural_voice_text(cta)
         answer_letter = "ABCD"[question.correct_index]
         return [
-            {"start": 0.2, "end": 4.4, "text": f"{question.hook}. Quiz rapido, valendo!"},
-            {"start": 5.2, "end": 11.0, "text": question.question},
-            {"start": 11.4, "end": 16.0, "text": f"A... {options[0]}."},
-            {"start": 16.2, "end": 20.8, "text": f"B... {options[1]}."},
-            {"start": 21.0, "end": 25.6, "text": f"C... {options[2]}."},
-            {"start": 25.8, "end": 30.4, "text": f"D... {options[3]}."},
-            {"start": 45.2, "end": 53.5, "text": "Pensou bem? Ultimos segundos... a resposta vem agora."},
+            {"start": 0.2, "end": 4.4, "text": f"{hook}. Presta atenção: essa vale ponto."},
+            {"start": 5.2, "end": 11.0, "text": question_text},
+            {"start": 11.4, "end": 16.0, "text": f"Letra A. {options[0]}."},
+            {"start": 16.2, "end": 20.8, "text": f"Letra B. {options[1]}."},
+            {"start": 21.0, "end": 25.6, "text": f"Letra C. {options[2]}."},
+            {"start": 25.8, "end": 30.4, "text": f"Letra D. {options[3]}."},
+            {"start": 45.2, "end": 53.5, "text": "Pensou bem? Últimos segundos... olha a resposta."},
             {
                 "start": 55.0,
                 "end": 59.3,
-                "text": f"A resposta correta e a letra {answer_letter}: {question.correct_answer}. {cta}.",
+                "text": f"A resposta correta é a letra {answer_letter}: {answer}. {cta_text}.",
             },
         ]
 
