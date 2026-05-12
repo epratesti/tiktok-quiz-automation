@@ -65,7 +65,10 @@ class VideoSettings:
 class VoiceSettings:
     provider: str = os.getenv("VOICE_PROVIDER", "edge").lower()
     language: str = os.getenv("VOICE_LANGUAGE", "pt-BR")
-    edge_voice: str = os.getenv("EDGE_TTS_VOICE", "pt-BR-AntonioNeural")
+    edge_voice: str = os.getenv("EDGE_TTS_VOICE", "pt-BR-FranciscaNeural")
+    edge_rate: str = os.getenv("EDGE_TTS_RATE", "+8%")
+    edge_pitch: str = os.getenv("EDGE_TTS_PITCH", "+4Hz")
+    edge_volume: str = os.getenv("EDGE_TTS_VOLUME", "+0%")
     gtts_tld: str = os.getenv("GTTS_TLD", "com.br")
     elevenlabs_voice_id: str = os.getenv("ELEVENLABS_VOICE_ID", "")
     elevenlabs_model: str = os.getenv("ELEVENLABS_MODEL", "eleven_multilingual_v2")
@@ -161,3 +164,30 @@ def ensure_directories() -> None:
 
 def require_ffmpeg_note() -> str:
     return "FFmpeg precisa estar instalado e disponivel no PATH para renderizacao e audio."
+
+
+def find_ffmpeg_binary() -> str:
+    ffmpeg_binary = os.getenv("FFMPEG_BINARY", "").strip()
+    if not ffmpeg_binary:
+        try:
+            import imageio_ffmpeg
+
+            ffmpeg_binary = imageio_ffmpeg.get_ffmpeg_exe()
+        except Exception:
+            ffmpeg_binary = ""
+    return ffmpeg_binary if ffmpeg_binary and Path(ffmpeg_binary).exists() else ""
+
+
+def configure_audio_tools() -> None:
+    """Point Pydub to a bundled FFmpeg binary when the system PATH does not have one."""
+    ffmpeg_binary = find_ffmpeg_binary()
+    if not ffmpeg_binary:
+        return
+
+    try:
+        from pydub import AudioSegment
+
+        AudioSegment.converter = ffmpeg_binary
+        AudioSegment.ffmpeg = ffmpeg_binary
+    except Exception:
+        return

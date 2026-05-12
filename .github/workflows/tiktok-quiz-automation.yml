@@ -15,7 +15,10 @@ jobs:
       DRY_RUN: ${{ secrets.DRY_RUN || 'true' }}
       VIDEOS_PER_RUN: "2"
       VOICE_PROVIDER: ${{ secrets.VOICE_PROVIDER || 'edge' }}
-      EDGE_TTS_VOICE: ${{ secrets.EDGE_TTS_VOICE || 'pt-BR-AntonioNeural' }}
+      EDGE_TTS_VOICE: ${{ secrets.EDGE_TTS_VOICE || 'pt-BR-FranciscaNeural' }}
+      EDGE_TTS_RATE: ${{ secrets.EDGE_TTS_RATE || '+8%' }}
+      EDGE_TTS_PITCH: ${{ secrets.EDGE_TTS_PITCH || '+4Hz' }}
+      EDGE_TTS_VOLUME: ${{ secrets.EDGE_TTS_VOLUME || '+0%' }}
       ELEVENLABS_API_KEY: ${{ secrets.ELEVENLABS_API_KEY }}
       ELEVENLABS_VOICE_ID: ${{ secrets.ELEVENLABS_VOICE_ID }}
       OPENAI_ENABLED: ${{ secrets.OPENAI_ENABLED || 'false' }}

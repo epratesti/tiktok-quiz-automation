@@ -3,16 +3,18 @@ from __future__ import annotations
 import asyncio
 import logging
 import random
+import subprocess
 from dataclasses import dataclass
 from pathlib import Path
 
 import requests
 from pydub import AudioSegment
 
-from config import settings
+from config import configure_audio_tools, find_ffmpeg_binary, settings
 from generate_questions import QuizQuestion
 
 logger = logging.getLogger(__name__)
+configure_audio_tools()
 
 
 @dataclass
@@ -27,23 +29,23 @@ class VoiceGenerator:
         options = question.options
         answer_letter = "ABCD"[question.correct_index]
         return [
-            {"start": 0.2, "end": 4.4, "text": f"{question.hook}. {question.category.title()} rapido!"},
+            {"start": 0.2, "end": 4.4, "text": f"{question.hook}. Quiz rapido, valendo!"},
             {"start": 5.2, "end": 11.0, "text": question.question},
-            {"start": 11.4, "end": 16.0, "text": f"Alternativa A: {options[0]}."},
-            {"start": 16.2, "end": 20.8, "text": f"Alternativa B: {options[1]}."},
-            {"start": 21.0, "end": 25.6, "text": f"Alternativa C: {options[2]}."},
-            {"start": 25.8, "end": 30.4, "text": f"Alternativa D: {options[3]}."},
-            {"start": 45.2, "end": 53.5, "text": "Pensou bem? A resposta vem agora."},
+            {"start": 11.4, "end": 16.0, "text": f"A... {options[0]}."},
+            {"start": 16.2, "end": 20.8, "text": f"B... {options[1]}."},
+            {"start": 21.0, "end": 25.6, "text": f"C... {options[2]}."},
+            {"start": 25.8, "end": 30.4, "text": f"D... {options[3]}."},
+            {"start": 45.2, "end": 53.5, "text": "Pensou bem? Ultimos segundos... a resposta vem agora."},
             {
                 "start": 55.0,
                 "end": 59.3,
-                "text": f"A resposta correta e {answer_letter}: {question.correct_answer}. {cta}.",
+                "text": f"A resposta correta e a letra {answer_letter}: {question.correct_answer}. {cta}.",
             },
         ]
 
     def generate(self, question: QuizQuestion, video_id: str, cta: str) -> NarrationResult:
         script = self.build_script(question, cta)
-        output_path = settings.paths.voices / f"{video_id}_narration.mp3"
+        output_path = settings.paths.voices / f"{video_id}_narration.wav"
         temp_dir = settings.paths.temp / video_id / "voice"
         temp_dir.mkdir(parents=True, exist_ok=True)
 
@@ -52,15 +54,32 @@ class VoiceGenerator:
             segment_path = temp_dir / f"{index:02d}.mp3"
             try:
                 self._generate_segment(item["text"], segment_path)
-                segment = AudioSegment.from_file(segment_path)
+                segment = self._load_segment(segment_path)
                 segment += settings.voice.volume_db
             except Exception as exc:  # noqa: BLE001 - TTS fallback keeps render alive
                 logger.warning("TTS falhou, usando silencio para segmento %s: %s", index, exc)
                 segment = AudioSegment.silent(duration=max(1200, int((item["end"] - item["start"]) * 1000)))
             base = base.overlay(segment, position=int(item["start"] * 1000))
 
-        base.export(output_path, format="mp3", bitrate="192k")
+        base.export(output_path, format="wav")
         return NarrationResult(audio_path=output_path, script=script, duration=settings.video.duration)
+
+    def _load_segment(self, segment_path: Path) -> AudioSegment:
+        try:
+            return AudioSegment.from_file(segment_path)
+        except Exception:
+            wav_path = segment_path.with_suffix(".wav")
+            self._convert_to_wav(segment_path, wav_path)
+            return AudioSegment.from_wav(wav_path)
+
+    def _convert_to_wav(self, input_path: Path, output_path: Path) -> None:
+        ffmpeg_binary = find_ffmpeg_binary()
+        if not ffmpeg_binary:
+            raise RuntimeError("FFmpeg nao encontrado para converter audio TTS.")
+        subprocess.run(
+            [ffmpeg_binary, "-y", "-hide_banner", "-loglevel", "error", "-i", str(input_path), str(output_path)],
+            check=True,
+        )
 
     def _generate_segment(self, text: str, output_path: Path) -> None:
         provider_chain = self._provider_chain()
@@ -99,7 +118,13 @@ class VoiceGenerator:
     async def _edge_tts(self, text: str, output_path: Path) -> None:
         import edge_tts
 
-        communicate = edge_tts.Communicate(text, settings.voice.edge_voice)
+        communicate = edge_tts.Communicate(
+            text,
+            settings.voice.edge_voice,
+            rate=settings.voice.edge_rate,
+            pitch=settings.voice.edge_pitch,
+            volume=settings.voice.edge_volume,
+        )
         await communicate.save(str(output_path))
 
     def _gtts(self, text: str, output_path: Path) -> None:

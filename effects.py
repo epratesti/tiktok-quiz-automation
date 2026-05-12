@@ -74,6 +74,22 @@ def wrap_text(text: str, font: ImageFont.ImageFont, max_width: int) -> list[str]
     return lines
 
 
+def text_width(text: str, font: ImageFont.ImageFont) -> int:
+    draw = ImageDraw.Draw(Image.new("RGBA", (10, 10)))
+    bbox = draw.textbbox((0, 0), text, font=font)
+    return bbox[2] - bbox[0]
+
+
+def fit_font(text: str, max_width: int, start_size: int, min_size: int = 30) -> ImageFont.ImageFont:
+    size = start_size
+    while size > min_size:
+        font = load_font(size)
+        if all(text_width(line, font) <= max_width for line in wrap_text(text, font, max_width)):
+            return font
+        size -= 2
+    return load_font(min_size)
+
+
 def text_panel(
     text: str,
     width: int,
@@ -88,9 +104,12 @@ def text_panel(
     font = load_font(font_size)
     small_font = load_font(max(28, int(font_size * 0.72)))
     max_width = width - padding * 2
-    lines = wrap_text(text, font, max_width)
+    lines: list[str] = []
+    for paragraph in text.splitlines() or [text]:
+        lines.extend(wrap_text(paragraph, font, max_width) or [""])
     draw_probe = ImageDraw.Draw(Image.new("RGBA", (10, 10)))
-    line_heights = [draw_probe.textbbox((0, 0), line, font=font)[3] for line in lines]
+    line_fonts = [font if len(line) < 28 else small_font for line in lines]
+    line_heights = [draw_probe.textbbox((0, 0), line, font=line_font)[3] for line, line_font in zip(lines, line_fonts, strict=False)]
     height = max(120, sum(line_heights) + padding * 2 + len(lines) * 12)
     image = Image.new("RGBA", (width, height), (0, 0, 0, 0))
 
@@ -117,14 +136,14 @@ def text_panel(
     )
 
     y = padding
-    for line, line_height in zip(lines, line_heights, strict=False):
-        bbox = panel_draw.textbbox((0, 0), line, font=font)
+    for line, line_height, line_font in zip(lines, line_heights, line_fonts, strict=False):
+        bbox = panel_draw.textbbox((0, 0), line, font=line_font)
         x = padding if align == "left" else (width - (bbox[2] - bbox[0])) // 2
         fill = theme["accent"] if highlight and highlight.upper() in line.upper() else theme["text"]
         panel_draw.text(
             (x, y),
             line,
-            font=font if len(line) < 28 else small_font,
+            font=line_font,
             fill=fill,
             stroke_width=stroke_width,
             stroke_fill=(0, 0, 0, 220),
@@ -135,21 +154,37 @@ def text_panel(
 
 def option_panel(label: str, text: str, width: int, theme_name: str, selected: bool = False) -> Image.Image:
     theme = THEMES[theme_name]
-    height = 148
+    height = 150
     image = Image.new("RGBA", (width, height), (0, 0, 0, 0))
     draw = ImageDraw.Draw(image)
     fill = (12, 15, 30, 210)
     outline = theme["accent"] if selected else theme["primary"]
-    draw.rounded_rectangle((8, 8, width - 8, height - 8), radius=28, fill=fill, outline=(*outline, 210), width=4)
-    label_font = load_font(56)
-    text_font = load_font(50)
-    draw.ellipse((34, 34, 112, 112), fill=(*outline, 230))
-    draw.text((58, 42), label, font=label_font, fill=(5, 8, 18), anchor="mm")
-    lines = wrap_text(text, text_font, width - 170)
-    y = 40 if len(lines) == 1 else 22
-    for line in lines[:2]:
+    draw.rounded_rectangle((8, 8, width - 8, height - 8), radius=22, fill=fill, outline=(*outline, 210), width=4)
+
+    bubble_box = (34, 34, 112, 112)
+    bubble_center = ((bubble_box[0] + bubble_box[2]) // 2, (bubble_box[1] + bubble_box[3]) // 2)
+    label_font = load_font(48)
+    draw.ellipse(bubble_box, fill=(*outline, 235))
+    draw.text(
+        bubble_center,
+        label,
+        font=label_font,
+        fill=(5, 8, 18),
+        anchor="mm",
+        stroke_width=1,
+        stroke_fill=(5, 8, 18),
+    )
+
+    text_area_width = width - 178
+    text_font = fit_font(text, text_area_width, 48, 34)
+    lines = wrap_text(text, text_font, text_area_width)[:2]
+    probe = ImageDraw.Draw(Image.new("RGBA", (10, 10)))
+    line_heights = [probe.textbbox((0, 0), line, font=text_font)[3] for line in lines]
+    total_text_height = sum(line_heights) + max(0, len(lines) - 1) * 10
+    y = (height - total_text_height) // 2 - 2
+    for line, line_height in zip(lines, line_heights, strict=False):
         draw.text((142, y), line, font=text_font, fill=theme["text"], stroke_width=2, stroke_fill=(0, 0, 0, 200))
-        y += 58
+        y += line_height + 10
     return image
 
 
@@ -196,19 +231,20 @@ def background_frame(t: float, width: int, height: int, theme_name: str) -> np.n
 
 
 def timer_frame(t: float, total: float, theme_name: str) -> np.ndarray:
-    width, height = 180, 760
+    width, height = 142, 720
     theme = THEMES[theme_name]
     remaining = max(0.0, total - t)
     progress = remaining / total if total else 0
-    image = Image.new("RGBA", (width, height), (0, 0, 0, 0))
+    image = Image.new("RGBA", (width, height), (*theme["bg_bottom"], 205))
     draw = ImageDraw.Draw(image)
-    draw.rounded_rectangle((50, 20, 130, height - 150), radius=38, fill=(5, 8, 18, 190), outline=(*theme["primary"], 200), width=4)
-    bar_h = int((height - 190) * progress)
-    draw.rounded_rectangle((62, height - 160 - bar_h, 118, height - 160), radius=28, fill=(*theme["accent"], 235))
-    font = load_font(72)
+    draw.rounded_rectangle((4, 4, width - 4, height - 4), radius=34, fill=(5, 8, 18, 235), outline=(*theme["primary"], 215), width=4)
+    draw.rounded_rectangle((46, 36, 96, height - 130), radius=25, fill=(2, 5, 14, 245), outline=(*theme["primary"], 210), width=4)
+    bar_h = int((height - 180) * progress)
+    draw.rounded_rectangle((55, height - 139 - bar_h, 87, height - 139), radius=18, fill=(*theme["accent"], 245))
+    font = load_font(62)
     number = str(int(math.ceil(remaining)))
-    draw.text((90, height - 86), number, font=font, fill=theme["text"], anchor="mm", stroke_width=3, stroke_fill=(0, 0, 0))
-    # VideoClip frame functions must return HxWx3 arrays for compatibility across MoviePy versions.
+    draw.text((width // 2, height - 70), number, font=font, fill=theme["text"], anchor="mm", stroke_width=3, stroke_fill=(0, 0, 0))
+    # Dynamic MoviePy clips are RGB in the deployed workflow, so the sidebar is drawn as a designed panel.
     return np.array(image.convert("RGB"))
 
 

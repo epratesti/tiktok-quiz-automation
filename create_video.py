@@ -15,7 +15,7 @@ try:
 except ImportError:  # MoviePy 2.x
     from moviepy import AudioFileClip, CompositeVideoClip, ImageClip, VideoClip, VideoFileClip
 
-from config import settings
+from config import configure_audio_tools, settings
 from effects import (
     background_frame,
     option_panel,
@@ -29,6 +29,7 @@ from generate_voice import NarrationResult
 from subtitles import build_segments_from_script, write_srt
 
 logger = logging.getLogger(__name__)
+configure_audio_tools()
 
 
 def clip_duration(clip: Any, duration: float) -> Any:
@@ -97,12 +98,14 @@ class VideoCreator:
         question_img = text_panel(question.question, width - 100, 68, theme_name, padding=38)
         clips.append(self._image_clip(question_img, 5, 40, ("center", 190)))
 
+        option_width = width - 330
+        option_x = 70
         for index, option in enumerate(question.options):
-            panel = option_panel("ABCD"[index], option, width - 140, theme_name)
-            clips.append(self._image_clip(panel, 8 + index * 1.0, 37 - index * 0.2, ("center", 610 + index * 180)))
+            panel = option_panel("ABCD"[index], option, option_width, theme_name)
+            clips.append(self._image_clip(panel, 8 + index * 1.0, 37 - index * 0.2, (option_x, 610 + index * 180)))
 
         timer = VideoClip(lambda t: timer_frame(t, 40, theme_name), duration=40)
-        clips.append(clip_position(clip_start(timer, 5), (width - 210, 620)))
+        clips.append(clip_position(clip_start(timer, 5), (width - 176, 620)))
 
         suspense = text_panel("RESPONDA AGORA...", width - 140, 82, theme_name, padding=40)
         clips.append(self._image_clip(suspense, 45, 10, ("center", 740)))
