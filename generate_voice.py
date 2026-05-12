@@ -63,15 +63,38 @@ class VoiceGenerator:
         return NarrationResult(audio_path=output_path, script=script, duration=settings.video.duration)
 
     def _generate_segment(self, text: str, output_path: Path) -> None:
-        provider = settings.voice.provider
+        provider_chain = self._provider_chain()
+        errors: list[str] = []
+        for provider in provider_chain:
+            try:
+                self._run_provider(provider, text, output_path)
+                if output_path.exists() and output_path.stat().st_size > 0:
+                    return
+                errors.append(f"{provider}: arquivo de audio vazio")
+            except Exception as exc:  # noqa: BLE001 - fallback providers keep pipeline resilient
+                errors.append(f"{provider}: {exc}")
+        raise RuntimeError("Todos os provedores TTS falharam. " + " | ".join(errors))
+
+    def _provider_chain(self) -> list[str]:
+        primary = settings.voice.provider.lower().strip()
+        ordered = [primary, "gtts", "edge", "elevenlabs"]
+        chain: list[str] = []
+        for provider in ordered:
+            if provider not in chain:
+                chain.append(provider)
+        return chain
+
+    def _run_provider(self, provider: str, text: str, output_path: Path) -> None:
         if provider == "edge":
             asyncio.run(self._edge_tts(text, output_path))
-        elif provider == "gtts":
+            return
+        if provider == "gtts":
             self._gtts(text, output_path)
-        elif provider == "elevenlabs":
+            return
+        if provider == "elevenlabs":
             self._elevenlabs(text, output_path)
-        else:
-            raise ValueError(f"VOICE_PROVIDER invalido: {provider}")
+            return
+        raise ValueError(f"VOICE_PROVIDER invalido: {provider}")
 
     async def _edge_tts(self, text: str, output_path: Path) -> None:
         import edge_tts

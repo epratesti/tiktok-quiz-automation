@@ -208,7 +208,8 @@ def timer_frame(t: float, total: float, theme_name: str) -> np.ndarray:
     font = load_font(72)
     number = str(int(math.ceil(remaining)))
     draw.text((90, height - 86), number, font=font, fill=theme["text"], anchor="mm", stroke_width=3, stroke_fill=(0, 0, 0))
-    return np.array(image)
+    # VideoClip frame functions must return HxWx3 arrays for compatibility across MoviePy versions.
+    return np.array(image.convert("RGB"))
 
 
 def progress_frame(t: float, duration: float, width: int, theme_name: str) -> np.ndarray:
@@ -219,4 +220,5 @@ def progress_frame(t: float, duration: float, width: int, theme_name: str) -> np
     draw.rounded_rectangle((40, 6, width - 40, 20), radius=7, fill=(255, 255, 255, 45))
     filled = int((width - 80) * min(max(t / duration, 0), 1))
     draw.rounded_rectangle((40, 6, 40 + filled, 20), radius=7, fill=(*theme["primary"], 230))
-    return np.array(image)
+    # Keep the dynamic progress bar in RGB to avoid RGBA blit errors during composition.
+    return np.array(image.convert("RGB"))
