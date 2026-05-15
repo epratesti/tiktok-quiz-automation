@@ -2,20 +2,20 @@
   "questions": [
     {
       "category": "Direito Constitucional",
-      "hook": "Questão de prova: Você conhece a nossa Constituição?",
+      "hook": "Questão de prova: você conhece a nossa Constituição?",
       "question": "Qual é o cargo que pode ser ocupado apenas por brasileiros natos?",
       "options": ["Senador", "Ministro do STF", "Governador", "Prefeito"],
       "correct_index": 1,
-      "explanation": "Conforme a CF/88, o cargo de Ministro do STF é privativo de brasileiro nato.",
+      "explanation": "Conforme a Constituição Federal de 1988, o cargo de Ministro do STF é privativo de brasileiro nato.",
       "difficulty": "medio"
     },
     {
       "category": "Língua Portuguesa",
-      "hook": "Desafio de Português: Essa muita gente erra em concursos!",
+      "hook": "Desafio de português: essa muita gente erra em concursos!",
       "question": "Qual é a forma correta de escrever a palavra?",
-      "options": ["Excessão", "Exceção", "Ecessão", "Exceção"],
+      "options": ["Excessão", "Exceção", "Ecessão", "Excesssão"],
       "correct_index": 1,
-      "explanation": "A forma correta é 'Exceção', com 'x' e 'ç'.",
+      "explanation": "A forma correta é 'Exceção', com x e ç.",
       "difficulty": "facil"
     },
     {
@@ -24,12 +24,12 @@
       "question": "Qual destes NÃO é um princípio explícito da Administração Pública?",
       "options": ["Legalidade", "Moralidade", "Eficiência", "Proporcionalidade"],
       "correct_index": 3,
-      "explanation": "LIMPE: Legalidade, Impessoalidade, Moralidade, Publicidade e Eficiência. Proporcionalidade é implícito.",
+      "explanation": "Legalidade, impessoalidade, moralidade, publicidade e eficiência são princípios explícitos. Proporcionalidade é princípio implícito.",
       "difficulty": "dificil"
     },
     {
       "category": "Atualidades",
-      "hook": "Atualidades para Concursos: Você está por dentro?",
+      "hook": "Atualidades para concursos: você está por dentro?",
       "question": "Qual é a capital federal do Brasil?",
       "options": ["Rio de Janeiro", "São Paulo", "Brasília", "Salvador"],
       "correct_index": 2,
@@ -38,12 +38,21 @@
     },
     {
       "category": "Raciocínio Lógico",
-      "hook": "Raciocínio Lógico: O terror dos concurseiros!",
+      "hook": "Raciocínio lógico: o terror dos concurseiros!",
       "question": "Se todo A é B e todo B é C, então:",
       "options": ["Todo C é A", "Algum C não é A", "Todo A é C", "Nenhum A é C"],
       "correct_index": 2,
-      "explanation": "Pela transitividade: se A está contido em B e B em C, então A está contido em C.",
+      "explanation": "Pela transitividade, se A está contido em B e B está contido em C, então A está contido em C.",
       "difficulty": "medio"
+    },
+    {
+      "category": "conhecimentos gerais",
+      "hook": "Essa parece fácil, mas muita gente erra",
+      "question": "Qual é o maior oceano do planeta?",
+      "options": ["Atlântico", "Índico", "Pacífico", "Ártico"],
+      "correct_index": 2,
+      "explanation": "O Oceano Pacífico é o maior do planeta.",
+      "difficulty": "facil"
     }
   ]
 }

@@ -15,7 +15,7 @@ try:
 except ImportError:  # Local JSON and synthetic generation still work before install.
     requests = None
 
-from config import settings
+from config import CONCURSO_THEME_PROMPT, settings
 
 logger = logging.getLogger(__name__)
 
@@ -204,6 +204,7 @@ class QuestionGenerator:
         client = OpenAI(api_key=settings.ai.openai_api_key)
         category = random.choice(settings.categories)
         prompt = (
+            f"{CONCURSO_THEME_PROMPT}\n\n"
             "Gere perguntas de quiz viral para TikTok em português brasileiro. "
             "Cada pergunta deve ser curta, ter 4 alternativas, uma resposta correta, "
             "explicação curta e hook de retenção. Responda somente JSON válido no formato "
