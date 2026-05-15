@@ -33,6 +33,12 @@ def run_pipeline(videos: int | None = None, upload: bool | None = None) -> list[
     logger = logging.getLogger("pipeline")
     batch_size = videos or settings.video.batch_size
     logger.info("Iniciando pipeline: %s videos", batch_size)
+    logger.info(
+        "Config upload TikTok: upload_enabled=%s dry_run=%s storage_state_exists=%s",
+        settings.tiktok.upload_enabled,
+        settings.tiktok.dry_run,
+        settings.tiktok.storage_state_path.exists(),
+    )
 
     questions = QuestionGenerator().generate_batch(batch_size)
     voice_generator = VoiceGenerator()
@@ -51,6 +57,15 @@ def run_pipeline(videos: int | None = None, upload: bool | None = None) -> list[
 
         should_upload = settings.tiktok.upload_enabled if upload is None else upload
         upload_result = uploader.upload(artifacts["video"], caption, artifacts.get("thumbnail")) if should_upload else None
+        if upload_result:
+            logger.info(
+                "Resultado upload %s: attempted=%s success=%s mode=%s message=%s",
+                video_id,
+                upload_result.attempted,
+                upload_result.success,
+                upload_result.mode,
+                upload_result.message,
+            )
 
         record = {
             "created_at": datetime.now(timezone.utc).isoformat(),
@@ -62,6 +77,10 @@ def run_pipeline(videos: int | None = None, upload: bool | None = None) -> list[
         }
         append_analytics(record)
         results.append(record)
+
+        if should_upload and (upload_result is None or not upload_result.success or upload_result.mode == "dry_run"):
+            message = upload_result.message if upload_result else "Upload habilitado, mas nenhum resultado foi retornado."
+            raise RuntimeError(f"Upload TikTok nao concluido para {video_id}: {message}")
 
     logger.info("Pipeline finalizado: %s videos processados", len(results))
     return results

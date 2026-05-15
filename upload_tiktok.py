@@ -71,6 +71,7 @@ class TikTokUploader:
             self._human_delay()
 
             if self._looks_logged_out(page):
+                self._save_failure_debug(page, video_path)
                 raise RuntimeError("Sessao TikTok expirada. Rode scripts/setup_tiktok_session.py e atualize o secret.")
 
             file_input = page.locator("input[type='file']").first
@@ -91,7 +92,9 @@ class TikTokUploader:
                 raise RuntimeError("Botao de publicar nao encontrado. A UI do TikTok pode ter mudado.")
 
             self._human_delay(multiplier=5)
-            self._wait_publish_result(page)
+            if not self._wait_publish_result(page):
+                self._save_failure_debug(page, video_path)
+                raise RuntimeError("Nao foi possivel confirmar a publicacao no TikTok apos clicar em publicar.")
             context.storage_state(path=str(settings.tiktok.storage_state_path))
             browser.close()
             return UploadResult(True, True, "playwright", "Upload enviado ao TikTok.")
@@ -168,7 +171,7 @@ class TikTokUploader:
                 continue
         return False
 
-    def _wait_publish_result(self, page: object) -> None:
+    def _wait_publish_result(self, page: object) -> bool:
         try:
             page.wait_for_load_state("networkidle", timeout=60_000)
         except Exception:
@@ -180,9 +183,10 @@ class TikTokUploader:
         for selector in success_patterns:
             try:
                 page.locator(selector).first.wait_for(state="visible", timeout=10_000)
-                return
+                return True
             except Exception:
                 continue
+        return False
 
     def _save_failure_debug(self, page: object, video_path: Path) -> None:
         debug_dir = settings.paths.logs / "tiktok_debug"
