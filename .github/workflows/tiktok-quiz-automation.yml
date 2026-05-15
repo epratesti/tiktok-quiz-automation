@@ -7,12 +7,12 @@ on:
   workflow_dispatch:
 
 jobs:
-  generate-and-publish:
+  generate-videos:
     runs-on: ubuntu-latest
     timeout-minutes: 90
 
     env:
-      DRY_RUN: ${{ secrets.DRY_RUN || 'true' }}
+      DRY_RUN: "true"
       VIDEOS_PER_RUN: "2"
       VOICE_PROVIDER: ${{ secrets.VOICE_PROVIDER || 'edge' }}
       EDGE_TTS_VOICE: ${{ secrets.EDGE_TTS_VOICE || 'pt-BR-ThalitaMultilingualNeural' }}
@@ -30,7 +30,7 @@ jobs:
       OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
       OPENAI_MODEL: ${{ secrets.OPENAI_MODEL || 'gpt-4o-mini' }}
       OPENTRIVIA_ENABLED: ${{ secrets.OPENTRIVIA_ENABLED || 'true' }}
-      TIKTOK_UPLOAD_ENABLED: ${{ secrets.TIKTOK_UPLOAD_ENABLED || 'false' }}
+      TIKTOK_UPLOAD_ENABLED: "false"
       TIKTOK_USERNAME: ${{ secrets.TIKTOK_USERNAME }}
       TIKTOK_STORAGE_STATE: data/tiktok_state.json
       PLAYWRIGHT_HEADLESS: "true"
@@ -54,50 +54,9 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-          python -m playwright install --with-deps chromium
 
-      - name: Restore TikTok session
-        env:
-          TIKTOK_STORAGE_STATE_B64: ${{ secrets.TIKTOK_STORAGE_STATE_B64 }}
-        run: |
-          if [ -n "$TIKTOK_STORAGE_STATE_B64" ]; then
-            mkdir -p data
-            python - <<'PY'
-          import base64
-          import os
-          from pathlib import Path
-
-          raw = os.environ["TIKTOK_STORAGE_STATE_B64"].strip().strip('"').strip("'")
-          try:
-              decoded = base64.b64decode(raw, validate=True)
-          except Exception as exc:
-              raise SystemExit(f"TIKTOK_STORAGE_STATE_B64 invalido: {exc}") from exc
-
-          target = Path("data/tiktok_state.json")
-          target.write_bytes(decoded)
-          print(f"Sessao TikTok restaurada: {target} ({target.stat().st_size} bytes)")
-          PY
-          else
-            echo "No TikTok session configured. Continuing in dry-run/no-upload mode."
-          fi
-
-      - name: Validate TikTok upload config
-        run: |
-          echo "DRY_RUN=$DRY_RUN"
-          echo "TIKTOK_UPLOAD_ENABLED=$TIKTOK_UPLOAD_ENABLED"
-          if [ -s data/tiktok_state.json ]; then
-            echo "TikTok session file found: $(wc -c < data/tiktok_state.json) bytes"
-          else
-            echo "TikTok session file not found or empty."
-          fi
-          if [ "$TIKTOK_UPLOAD_ENABLED" = "true" ] && [ "$DRY_RUN" = "false" ] && [ ! -s data/tiktok_state.json ]; then
-            echo "TIKTOK_UPLOAD_ENABLED=true, mas TIKTOK_STORAGE_STATE_B64 nao foi configurado."
-            echo "Rode scripts/setup_tiktok_session.py localmente e salve o secret TIKTOK_STORAGE_STATE_B64."
-            exit 1
-          fi
-
-      - name: Generate and optionally publish videos
-        run: python main.py --videos 2
+      - name: Generate videos only
+        run: python main.py --videos 2 --no-upload
 
       - name: Upload generated artifacts
         if: always()
