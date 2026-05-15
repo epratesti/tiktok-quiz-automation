@@ -53,7 +53,7 @@ def clip_resize(clip: Any, **kwargs: Any) -> Any:
 
 
 class VideoCreator:
-    def create(self, question: QuizQuestion, narration: NarrationResult, video_id: str | None = None) -> dict[str, Path]:
+    def create(self, question: QuizQuestion, narration: NarrationResult, video_id: str | None = None, cta: str | None = None) -> dict[str, Path]:
         video_id = video_id or f"quiz_{uuid.uuid4().hex[:10]}"
         theme_name = random.choice(settings.templates)
         output_mp4 = settings.paths.output / f"{video_id}.mp4"
@@ -119,8 +119,9 @@ class VideoCreator:
         )
         clips.append(self._image_clip(reveal, 55, 5, ("center", 520)))
 
-        cta = text_panel("Comente quantas você acertou", width - 140, 54, theme_name, padding=30)
-        clips.append(self._image_clip(cta, 55.3, 4.7, ("center", 1320)))
+        cta_text = cta or "Comente quantas você acertou"
+        cta_panel = text_panel(cta_text, width - 140, 54, theme_name, padding=30)
+        clips.append(self._image_clip(cta_panel, 55.3, 4.7, ("center", 1320)))
 
         progress = VideoClip(lambda t: progress_frame(t, duration, width, theme_name), duration=duration)
         clips.append(clip_position(progress, ("center", height - 64)))

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import logging
 import random
 import re
@@ -37,18 +38,42 @@ class TikTokUploader:
             return UploadResult(False, False, "playwright", f"Video nao encontrado: {video_path}")
 
         if not settings.tiktok.storage_state_path.exists():
+            logger.error("Arquivo de sessao nao encontrado: %s", settings.tiktok.storage_state_path)
             return UploadResult(
                 False,
                 False,
                 "playwright",
                 f"Sessao TikTok nao encontrada em {settings.tiktok.storage_state_path}. Rode scripts/setup_tiktok_session.py.",
             )
+        
+        # Validar integridade do arquivo de sessao
+        try:
+            storage_state = json.loads(settings.tiktok.storage_state_path.read_text(encoding="utf-8"))
+            if not isinstance(storage_state, dict) or "cookies" not in storage_state:
+                raise ValueError("Estrutura de sessao invalida: chave 'cookies' nao encontrada.")
+            logger.debug("Arquivo de sessao validado com sucesso.")
+        except json.JSONDecodeError as exc:
+            logger.error("Arquivo de sessao corrompido (JSON invalido): %s", exc)
+            return UploadResult(
+                False,
+                False,
+                "playwright",
+                f"Arquivo de sessao corrompido: {exc}. Rode scripts/setup_tiktok_session.py novamente.",
+            )
+        except ValueError as exc:
+            logger.error("Arquivo de sessao com estrutura invalida: %s", exc)
+            return UploadResult(
+                False,
+                False,
+                "playwright",
+                f"Arquivo de sessao invalido: {exc}. Rode scripts/setup_tiktok_session.py novamente.",
+            )
 
         for attempt in range(1, settings.tiktok.max_retries + 2):
             try:
                 return self._upload_with_playwright(video_path, caption, thumbnail_path)
             except Exception as exc:  # noqa: BLE001 - retry boundary
-                logger.warning("Tentativa %s de upload falhou: %s", attempt, exc)
+                logger.warning("Tentativa %s de upload falhou: %s", attempt, exc, exc_info=(attempt > settings.tiktok.max_retries))
                 if attempt > settings.tiktok.max_retries:
                     return UploadResult(True, False, "playwright", str(exc))
                 self._human_delay(multiplier=attempt + 1)

@@ -53,7 +53,7 @@ def run_pipeline(videos: int | None = None, upload: bool | None = None) -> list[
         logger.info("Gerando video %s/%s: %s", index, batch_size, question.question)
 
         narration = voice_generator.generate(question, video_id, cta)
-        artifacts = video_creator.create(question, narration, video_id)
+        artifacts = video_creator.create(question, narration, video_id, cta)
 
         should_upload = settings.tiktok.upload_enabled if upload is None else upload
         upload_result = uploader.upload(artifacts["video"], caption, artifacts.get("thumbnail")) if should_upload else None

@@ -273,8 +273,9 @@ class VoiceGenerator:
         tts.save(str(output_path))
 
     def _elevenlabs(self, text: str, output_path: Path) -> None:
-        api_key = settings.ai.openai_api_key
-        eleven_key = __import__("os").getenv("ELEVENLABS_API_KEY", "")
+        import os
+        
+        eleven_key = os.getenv("ELEVENLABS_API_KEY", "")
         if not eleven_key:
             raise RuntimeError("ELEVENLABS_API_KEY nao configurada.")
         voice_id = settings.voice.elevenlabs_voice_id
@@ -295,7 +296,6 @@ class VoiceGenerator:
             },
             timeout=30,
         )
-        if api_key:
-            logger.debug("OpenAI key present; ElevenLabs request uses its own key.")
+        logger.debug("ElevenLabs TTS request enviado com sucesso.")
         response.raise_for_status()
         output_path.write_bytes(response.content)

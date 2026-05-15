@@ -135,8 +135,10 @@ class QuestionGenerator:
         for source in sources:
             try:
                 candidates.extend(source(max(count * 4, 8)))
+            except (requests.RequestException, json.JSONDecodeError, ValueError, RuntimeError) as exc:
+                logger.warning("Fonte de perguntas %s falhou: %s", source.__name__, exc)
             except Exception as exc:  # noqa: BLE001 - source fallback should keep pipeline alive
-                logger.warning("Fonte de perguntas falhou: %s", exc)
+                logger.error("Erro inesperado em fonte de perguntas %s: %s", source.__name__, exc, exc_info=True)
 
             unique = self._dedupe(candidates)
             fresh = [question for question in unique if not self.history.seen(question)]
@@ -310,6 +312,11 @@ class QuestionGenerator:
         return "curiosidades"
 
     def _pt_hint(self, question: str) -> str:
+        """Melhora perguntas do OpenTrivia mantendo a estrutura em inglês quando necessário."""
+        # Para agora, mantém como está. Implementação futura pode usar OpenAI para tradução.
+        # Exemplo de uso futuro:
+        # if settings.ai.openai_enabled:
+        #     return self._translate_with_openai(question)
         return question
 
 
