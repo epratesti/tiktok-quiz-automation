@@ -49,6 +49,11 @@ def ensure_directories():
     for directory in directories:
         Path(PROJECT_ROOT / directory).mkdir(parents=True, exist_ok=True)
 
+def configure_audio_tools():
+    """Configura ferramentas de áudio se necessário."""
+    # Placeholder para compatibilidade com create_video.py
+    pass
+
 @dataclass(frozen=True)
 class VideoSettings:
     width: int = env_int("VIDEO_WIDTH", 1080)
