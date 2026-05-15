@@ -189,3 +189,11 @@ class VideoCreator:
         for suffix in ("*.mp3", "*.wav", "*.m4a", "*.ogg"):
             candidates.extend(settings.paths.music.glob(suffix))
         return random.choice(candidates) if candidates else None
+
+    def create_multi_question(self, questions: list, narration, video_id: str, cta: str):
+        """Cria vídeo com múltiplas perguntas."""
+        # Para agora, usa o primeiro método (compatibilidade)
+        # Implementação futura: layout com 3 perguntas lado a lado ou em sequência
+        if questions:
+            return self.create(questions[0], narration, video_id, cta)
+        raise ValueError("Nenhuma pergunta fornecida para criar vídeo")

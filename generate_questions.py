@@ -37,8 +37,12 @@ class QuizQuestion:
         return self.options[self.correct_index]
 
     def signature(self) -> str:
-        normalized = re.sub(r"\W+", "", self.question.lower())
-        return hashlib.sha256(normalized.encode("utf-8")).hexdigest()[:16]
+        # Normaliza a pergunta removendo espaços, pontuação e convertendo para minúsculas
+        # Também inclui as opções para garantir que variações da mesma pergunta sejam tratadas
+        norm_q = re.sub(r"\W+", "", self.question.lower())
+        norm_opts = "".join(sorted([re.sub(r"\W+", "", str(o).lower()) for o in self.options]))
+        combined = f"{norm_q}|{norm_opts}"
+        return hashlib.sha256(combined.encode("utf-8")).hexdigest()[:24]
 
 
 HOOKS = [
@@ -145,10 +149,15 @@ class QuestionGenerator:
             if len(fresh) >= count:
                 selected = self._select_balanced(fresh, count)
                 self.history.add_many(selected)
+                logger.info("Lote de %s perguntas gerado e salvo no historico.", len(selected))
                 return selected
 
-        selected = self._select_balanced(self._dedupe(candidates), count)
+        # Se não houver perguntas frescas suficientes, usa o que tiver (mesmo que repetidas)
+        # mas prioriza as únicas
+        all_unique = self._dedupe(candidates)
+        selected = self._select_balanced(all_unique, count)
         self.history.add_many(selected)
+        logger.warning("Apenas %s perguntas frescas encontradas. Usando repetidas para completar o lote.", len(fresh))
         return selected
 
     def _from_local_json(self, limit: int) -> list[QuizQuestion]:

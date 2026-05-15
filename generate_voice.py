@@ -197,6 +197,32 @@ class VoiceGenerator:
         base.export(output_path, format="wav")
         return NarrationResult(audio_path=output_path, script=script, duration=settings.video.duration)
 
+    def generate_multi_question(self, multi_script, video_id: str):
+        """Gera narração para múltiplas perguntas em um único vídeo."""
+        return self._generate_audio_from_script(multi_script.segments, video_id, multi_script.total_duration)
+    
+    def _generate_audio_from_script(self, script: list, video_id: str, duration: float):
+        """Gera áudio a partir de um script de segmentos."""
+        output_path = settings.paths.voices / f"{video_id}_narration.wav"
+        temp_dir = settings.paths.temp / video_id / "voice"
+        temp_dir.mkdir(parents=True, exist_ok=True)
+
+        base = AudioSegment.silent(duration=int(duration * 1000))
+        for index, item in enumerate(script):
+            segment_path = temp_dir / f"{index:02d}.mp3"
+            try:
+                self._generate_segment(item["text"], segment_path)
+                segment = self._load_segment(segment_path)
+                segment = self._polish_voice_segment(segment + settings.voice.volume_db)
+            except Exception as exc:
+                logger.warning("TTS falhou, usando silencio para segmento %s: %s", index, exc)
+                segment = AudioSegment.silent(duration=max(1200, int((item["end"] - item["start"]) * 1000)))
+            base = base.overlay(segment, position=int(item["start"] * 1000))
+
+        base.export(output_path, format="wav")
+        from generate_voice import NarrationResult
+        return NarrationResult(audio_path=output_path, script=script, duration=duration)
+
     def _polish_voice_segment(self, segment: AudioSegment) -> AudioSegment:
         segment = segment.strip_silence(silence_len=180, silence_thresh=-42, padding=80)
         segment = compress_dynamic_range(segment, threshold=-18.0, ratio=2.2, attack=6.0, release=80.0)

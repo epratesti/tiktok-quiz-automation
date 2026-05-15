@@ -22,7 +22,12 @@ class UploadResult:
 
 
 class TikTokUploader:
-    """TikTok uploader com suporte melhorado para diferentes versões da UI."""
+    """TikTok uploader with conservative guardrails.
+
+    This module does not bypass CAPTCHAs, login challenges, device checks, or
+    platform limits. Use it only on accounts where automation is allowed and
+    configured. The default DRY_RUN mode logs what would be uploaded.
+    """
 
     def upload(self, video_path: Path, caption: str, thumbnail_path: Path | None = None) -> UploadResult:
         if settings.tiktok.dry_run or not settings.tiktok.upload_enabled:
@@ -67,7 +72,7 @@ class TikTokUploader:
         for attempt in range(1, settings.tiktok.max_retries + 2):
             try:
                 return self._upload_with_playwright(video_path, caption, thumbnail_path)
-            except Exception as exc:
+            except Exception as exc:  # noqa: BLE001 - retry boundary
                 logger.warning("Tentativa %s de upload falhou: %s", attempt, exc, exc_info=(attempt > settings.tiktok.max_retries))
                 if attempt > settings.tiktok.max_retries:
                     return UploadResult(True, False, "playwright", str(exc))
@@ -79,14 +84,7 @@ class TikTokUploader:
         from playwright.sync_api import sync_playwright
 
         with sync_playwright() as p:
-            browser = p.chromium.launch(
-                headless=settings.tiktok.headless,
-                args=[
-                    "--disable-blink-features=AutomationControlled",
-                    "--disable-dev-shm-usage",
-                    "--no-sandbox",
-                ]
-            )
+            browser = p.chromium.launch(headless=settings.tiktok.headless, args=["--disable-blink-features=AutomationControlled"])
             context = browser.new_context(
                 storage_state=str(settings.tiktok.storage_state_path),
                 viewport={"width": 1440, "height": 1100},
@@ -94,70 +92,37 @@ class TikTokUploader:
                 timezone_id="America/Sao_Paulo",
             )
             page = context.new_page()
-            
-            try:
-                page.goto(settings.tiktok.upload_url, wait_until="domcontentloaded", timeout=90_000)
-                self._human_delay()
+            page.goto(settings.tiktok.upload_url, wait_until="domcontentloaded", timeout=90_000)
+            self._human_delay()
 
-                if self._looks_logged_out(page):
-                    self._save_failure_debug(page, video_path)
-                    raise RuntimeError("Sessao TikTok expirada. Rode scripts/setup_tiktok_session.py e atualize o secret.")
-
-                # Upload do vídeo
-                self._upload_video_file(page, video_path)
-                self._wait_upload_processing(page)
-
-                # Preenchimento da legenda
-                caption_text = f"{settings.tiktok.caption_prefix}\n{caption}".strip()
-                if not self._fill_caption(page, caption_text):
-                    logger.warning("Campo de legenda nao localizado; continuando sem alterar legenda.")
-
-                # Upload de thumbnail (se fornecido)
-                if thumbnail_path and thumbnail_path.exists():
-                    logger.info("Thumbnail gerada em %s. O upload automatico de thumbnail depende da UI atual do TikTok.", thumbnail_path)
-
-                self._human_delay(multiplier=2)
-                
-                # Publicação
-                if not self._click_publish(page):
-                    self._save_failure_debug(page, video_path)
-                    raise RuntimeError("Botao de publicar nao encontrado. A UI do TikTok pode ter mudado.")
-
-                self._human_delay(multiplier=5)
-                
-                # Confirmação de publicação
-                if not self._wait_publish_result(page):
-                    self._save_failure_debug(page, video_path)
-                    raise RuntimeError("Nao foi possivel confirmar a publicacao no TikTok apos clicar em publicar.")
-                
-                # Salvar estado atualizado
-                context.storage_state(path=str(settings.tiktok.storage_state_path))
-                browser.close()
-                return UploadResult(True, True, "playwright", "Upload enviado ao TikTok.")
-            except Exception as exc:
+            if self._looks_logged_out(page):
                 self._save_failure_debug(page, video_path)
-                browser.close()
-                raise
+                raise RuntimeError("Sessao TikTok expirada. Rode scripts/setup_tiktok_session.py e atualize o secret.")
 
-    def _upload_video_file(self, page: object, video_path: Path) -> None:
-        """Faz upload do arquivo de vídeo."""
-        file_input_selectors = [
-            "input[type='file']",
-            "input[accept*='video']",
-            "input[accept*='mp4']",
-        ]
-        
-        for selector in file_input_selectors:
-            try:
-                file_input = page.locator(selector).first
-                file_input.wait_for(state="attached", timeout=60_000)
-                file_input.set_input_files(str(video_path))
-                logger.info("Arquivo de vídeo enviado com sucesso")
-                return
-            except Exception:
-                continue
-        
-        raise RuntimeError("Nao foi possivel encontrar o campo de upload de vídeo")
+            file_input = page.locator("input[type='file']").first
+            file_input.wait_for(state="attached", timeout=60_000)
+            file_input.set_input_files(str(video_path))
+            self._wait_upload_processing(page)
+
+            caption_text = f"{settings.tiktok.caption_prefix}\n{caption}".strip()
+            if not self._fill_caption(page, caption_text):
+                logger.warning("Campo de legenda nao localizado; continuando sem alterar legenda.")
+
+            if thumbnail_path and thumbnail_path.exists():
+                logger.info("Thumbnail gerada em %s. O upload automatico de thumbnail depende da UI atual do TikTok.", thumbnail_path)
+
+            self._human_delay(multiplier=2)
+            if not self._click_publish(page):
+                self._save_failure_debug(page, video_path)
+                raise RuntimeError("Botao de publicar nao encontrado. A UI do TikTok pode ter mudado.")
+
+            self._human_delay(multiplier=5)
+            if not self._wait_publish_result(page):
+                self._save_failure_debug(page, video_path)
+                raise RuntimeError("Nao foi possivel confirmar a publicacao no TikTok apos clicar em publicar.")
+            context.storage_state(path=str(settings.tiktok.storage_state_path))
+            browser.close()
+            return UploadResult(True, True, "playwright", "Upload enviado ao TikTok.")
 
     def _looks_logged_out(self, page: object) -> bool:
         login_patterns = [
@@ -189,61 +154,46 @@ class TikTokUploader:
             except Exception:
                 pass
             if body_text and not any(pattern.search(body_text) for pattern in processing_patterns):
-                logger.info("Upload de vídeo concluído")
                 return
             self._human_delay(multiplier=0.5)
 
     def _fill_caption(self, page: object, caption_text: str) -> bool:
         caption_selectors = [
             "[data-e2e='caption-container'] [contenteditable='true']",
-            "[data-e2e='caption'] [contenteditable='true']",
-            "div[data-e2e='caption'] textarea",
-            "div[contenteditable='true'][role='textbox']",
             "div[contenteditable='true']",
             "[contenteditable='true']",
             "textarea",
             "div[role='textbox']",
         ]
-        
         for selector in caption_selectors:
+            locator = page.locator(selector).first
             try:
-                locator = page.locator(selector).first
                 locator.wait_for(state="visible", timeout=15_000)
                 locator.click()
                 page.keyboard.press("Control+A")
                 page.keyboard.type(caption_text, delay=random.randint(8, 22))
-                logger.info("Legenda preenchida com sucesso")
                 return True
             except Exception:
                 continue
-        
-        logger.warning("Nao foi possivel preencher a legenda")
         return False
 
     def _click_publish(self, page: object) -> bool:
         post_selectors = [
             "button[data-e2e='post_video_button']",
-            "button[data-e2e='publish-button']",
             "button:has-text('Publicar')",
             "button:has-text('Post')",
             "button:has-text('Agendar')",
-            "button:has-text('Share')",
         ]
-        
         for selector in post_selectors:
+            button = page.locator(selector).first
             try:
-                button = page.locator(selector).first
                 button.wait_for(state="visible", timeout=30_000)
                 if button.is_disabled():
-                    logger.warning("Botao de publicar está desabilitado, aguardando...")
                     self._human_delay(multiplier=2)
                 button.click(timeout=20_000)
-                logger.info("Botao de publicar clicado com sucesso")
                 return True
             except Exception:
                 continue
-        
-        logger.error("Nao foi possivel encontrar o botao de publicar")
         return False
 
     def _wait_publish_result(self, page: object) -> bool:
@@ -251,22 +201,16 @@ class TikTokUploader:
             page.wait_for_load_state("networkidle", timeout=60_000)
         except Exception:
             pass
-        
         success_patterns = [
             "text=/uploaded|published|publicado|enviado/i",
             "text=/Your video is being uploaded/i",
-            "text=/Video posted/i",
         ]
-        
         for selector in success_patterns:
             try:
                 page.locator(selector).first.wait_for(state="visible", timeout=10_000)
-                logger.info("Publicação confirmada com sucesso")
                 return True
             except Exception:
                 continue
-        
-        logger.warning("Nao foi possivel confirmar a publicacao")
         return False
 
     def _save_failure_debug(self, page: object, video_path: Path) -> None:
@@ -275,12 +219,10 @@ class TikTokUploader:
         name = video_path.stem
         try:
             page.screenshot(path=str(debug_dir / f"{name}.png"), full_page=True)
-            logger.info("Screenshot de debug salvo em %s", debug_dir / f"{name}.png")
         except Exception:
             pass
         try:
             (debug_dir / f"{name}.html").write_text(page.content(), encoding="utf-8")
-            logger.info("HTML de debug salvo em %s", debug_dir / f"{name}.html")
         except Exception:
             pass
 

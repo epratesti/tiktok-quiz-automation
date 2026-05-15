@@ -14,6 +14,7 @@ from create_video import VideoCreator
 from generate_questions import QuestionGenerator, question_to_dict
 from generate_voice import VoiceGenerator
 from hashtags import build_caption
+from multi_question_handler import MultiQuestionBuilder
 from upload_tiktok import TikTokUploader
 
 
@@ -32,7 +33,8 @@ def run_pipeline(videos: int | None = None, upload: bool | None = None) -> list[
     ensure_directories()
     logger = logging.getLogger("pipeline")
     batch_size = videos or settings.video.batch_size
-    logger.info("Iniciando pipeline: %s videos", batch_size)
+    questions_per_video = 3
+    logger.info("Iniciando pipeline: %s videos com %s perguntas cada", batch_size, questions_per_video)
     logger.info(
         "Config upload TikTok: upload_enabled=%s dry_run=%s storage_state_exists=%s",
         settings.tiktok.upload_enabled,
@@ -40,21 +42,40 @@ def run_pipeline(videos: int | None = None, upload: bool | None = None) -> list[
         settings.tiktok.storage_state_path.exists(),
     )
 
-    questions = QuestionGenerator().generate_batch(batch_size)
+    total_questions_needed = batch_size * questions_per_video
+    all_questions = QuestionGenerator().generate_batch(total_questions_needed)
+    
     voice_generator = VoiceGenerator()
     video_creator = VideoCreator()
     uploader = TikTokUploader()
+    multi_builder = MultiQuestionBuilder(questions_per_video=questions_per_video)
     results = []
 
-    for index, question in enumerate(questions, start=1):
-        video_id = f"{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')}_{index}_{uuid.uuid4().hex[:6]}"
+    for video_idx in range(batch_size):
+        start_idx = video_idx * questions_per_video
+        end_idx = min(start_idx + questions_per_video, len(all_questions))
+        questions_for_video = all_questions[start_idx:end_idx]
+        
+        if not questions_for_video:
+            logger.warning("Nao ha perguntas suficientes para o video %s", video_idx + 1)
+            break
+        
+        video_id = f"{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')}_{video_idx + 1}_{uuid.uuid4().hex[:6]}"
         cta = random.choice(settings.ctas)
-        caption = build_caption(question.hook, question.category, cta)
-        logger.info("Gerando video %s/%s: %s", index, batch_size, question.question)
-
-        narration = voice_generator.generate(question, video_id, cta)
-        artifacts = video_creator.create(question, narration, video_id, cta)
-
+        
+        multi_script = multi_builder.build_multi_question_script(questions_for_video, cta)
+        logger.info("Gerando video %s/%s com %s perguntas", video_idx + 1, batch_size, len(questions_for_video))
+        
+        narration = voice_generator.generate_multi_question(multi_script, video_id)
+        
+        artifacts = video_creator.create_multi_question(questions_for_video, narration, video_id, cta)
+        
+        caption = build_caption(
+            f"{len(questions_for_video)} quizzes rápidos",
+            "quiz",
+            cta
+        )
+        
         should_upload = settings.tiktok.upload_enabled if upload is None else upload
         upload_result = uploader.upload(artifacts["video"], caption, artifacts.get("thumbnail")) if should_upload else None
         if upload_result:
@@ -66,22 +87,22 @@ def run_pipeline(videos: int | None = None, upload: bool | None = None) -> list[
                 upload_result.mode,
                 upload_result.message,
             )
-
+        
         record = {
             "created_at": datetime.now(timezone.utc).isoformat(),
             "video_id": video_id,
-            "question": question_to_dict(question),
+            "questions": [question_to_dict(q) for q in questions_for_video],
             "caption": caption,
             "artifacts": {key: str(value) for key, value in artifacts.items()},
             "upload": upload_result.__dict__ if upload_result else {"attempted": False, "success": True, "mode": "disabled"},
         }
         append_analytics(record)
         results.append(record)
-
+        
         if should_upload and (upload_result is None or not upload_result.success or upload_result.mode == "dry_run"):
             message = upload_result.message if upload_result else "Upload habilitado, mas nenhum resultado foi retornado."
             raise RuntimeError(f"Upload TikTok nao concluido para {video_id}: {message}")
-
+    
     logger.info("Pipeline finalizado: %s videos processados", len(results))
     return results
 
