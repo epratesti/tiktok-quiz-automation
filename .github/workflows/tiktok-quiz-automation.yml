@@ -62,13 +62,34 @@ jobs:
         run: |
           if [ -n "$TIKTOK_STORAGE_STATE_B64" ]; then
             mkdir -p data
-            echo "$TIKTOK_STORAGE_STATE_B64" | base64 -d > data/tiktok_state.json
+            python - <<'PY'
+          import base64
+          import os
+          from pathlib import Path
+
+          raw = os.environ["TIKTOK_STORAGE_STATE_B64"].strip().strip('"').strip("'")
+          try:
+              decoded = base64.b64decode(raw, validate=True)
+          except Exception as exc:
+              raise SystemExit(f"TIKTOK_STORAGE_STATE_B64 invalido: {exc}") from exc
+
+          target = Path("data/tiktok_state.json")
+          target.write_bytes(decoded)
+          print(f"Sessao TikTok restaurada: {target} ({target.stat().st_size} bytes)")
+          PY
           else
             echo "No TikTok session configured. Continuing in dry-run/no-upload mode."
           fi
 
       - name: Validate TikTok upload config
         run: |
+          echo "DRY_RUN=$DRY_RUN"
+          echo "TIKTOK_UPLOAD_ENABLED=$TIKTOK_UPLOAD_ENABLED"
+          if [ -s data/tiktok_state.json ]; then
+            echo "TikTok session file found: $(wc -c < data/tiktok_state.json) bytes"
+          else
+            echo "TikTok session file not found or empty."
+          fi
           if [ "$TIKTOK_UPLOAD_ENABLED" = "true" ] && [ "$DRY_RUN" = "false" ] && [ ! -s data/tiktok_state.json ]; then
             echo "TIKTOK_UPLOAD_ENABLED=true, mas TIKTOK_STORAGE_STATE_B64 nao foi configurado."
             echo "Rode scripts/setup_tiktok_session.py localmente e salve o secret TIKTOK_STORAGE_STATE_B64."
