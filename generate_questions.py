@@ -39,7 +39,9 @@ class QuizQuestion:
 
     def signature(self) -> str:
         """Gera uma assinatura semântica rigorosa para evitar repetições."""
+        # Normalização agressiva: apenas letras e números para ignorar variações de pontuação/espaço
         normalized = re.sub(r"[^a-z0-9]", "", self.question.lower())
+        # Se a pergunta for muito curta, adiciona as opções na assinatura para diferenciar
         if len(normalized) < 20:
             opts = "".join(sorted([re.sub(r"[^a-z0-9]", "", o.lower()) for o in self.options]))
             normalized += opts
@@ -57,31 +59,51 @@ HOOKS = [
 
 
 class QuestionHistory:
-    def __init__(self, path: Path, limit: int = 2000) -> None:
+    def __init__(self, path: Path, limit: int = 5000) -> None:
         self.path = path
         self.limit = limit
         self.path.parent.mkdir(parents=True, exist_ok=True)
         self.signatures = self._load()
+        logger.info(f"Histórico carregado: {len(self.signatures)} perguntas registradas.")
 
     def _load(self) -> list[str]:
         if not self.path.exists():
+            logger.info("Arquivo de histórico não encontrado, iniciando novo.")
             return []
         try:
-            data = json.loads(self.path.read_text(encoding="utf-8"))
+            content = self.path.read_text(encoding="utf-8").strip()
+            if not content:
+                return []
+            data = json.loads(content)
             return list(data.get("signatures", []))
-        except (json.JSONDecodeError, OSError):
+        except Exception as e:
+            logger.error(f"Erro ao carregar histórico: {e}")
             return []
 
     def seen(self, question: QuizQuestion) -> bool:
-        return question.signature() in self.signatures
+        sig = question.signature()
+        is_seen = sig in self.signatures
+        if is_seen:
+            logger.info(f"Pergunta repetida detectada: {question.question[:50]}...")
+        return is_seen
 
     def add_many(self, questions: list[QuizQuestion]) -> None:
         for question in questions:
             sig = question.signature()
             if sig not in self.signatures:
                 self.signatures.append(sig)
+        
+        # Mantém o histórico dentro do limite
         self.signatures = self.signatures[-self.limit :]
-        self.path.write_text(json.dumps({"signatures": self.signatures}, indent=2), encoding="utf-8")
+        
+        # Salvamento atômico para evitar corrupção de arquivo
+        temp_path = self.path.with_suffix(".tmp")
+        try:
+            temp_path.write_text(json.dumps({"signatures": self.signatures}, indent=2), encoding="utf-8")
+            temp_path.replace(self.path)
+            logger.info(f"Histórico atualizado com sucesso. Total: {len(self.signatures)}")
+        except Exception as e:
+            logger.error(f"Erro ao salvar histórico: {e}")
 
 
 class QuestionGenerator:
@@ -89,39 +111,49 @@ class QuestionGenerator:
         self.history = QuestionHistory(settings.paths.history_json)
 
     def generate_batch(self, count: int = 3) -> list[QuizQuestion]:
-        """Gera perguntas exclusivamente em Português Brasileiro e inéditas."""
-        candidates: list[QuizQuestion] = []
-        
-        # 1. Tenta OpenAI (Sempre em PT-BR)
-        try:
-            candidates.extend(self._from_openai(count * 3))
-        except Exception as e:
-            logger.warning(f"Falha OpenAI: {e}")
+        """Gera perguntas inéditas em Português Brasileiro."""
+        selected: list[QuizQuestion] = []
+        max_attempts = 5
+        attempt = 0
 
-        # 2. Fallback para Local JSON (Se existir)
-        if len([q for q in candidates if not self.history.seen(q)]) < count:
-            candidates.extend(self._from_local_json(count * 2))
+        while len(selected) < count and attempt < max_attempts:
+            attempt += 1
+            candidates: list[QuizQuestion] = []
+            
+            # 1. Tenta OpenAI (Sempre em PT-BR)
+            try:
+                needed = count - len(selected)
+                candidates.extend(self._from_openai(needed * 3))
+            except Exception as e:
+                logger.warning(f"Falha OpenAI: {e}")
 
-        # Filtragem rigorosa de inéditas e idioma (detecção básica de inglês)
-        unique_candidates = []
-        seen_sigs = set()
-        for q in candidates:
-            sig = q.signature()
-            # Evita repetição e perguntas que pareçam estar em inglês (ex: palavras comuns)
-            is_english = any(word in q.question.lower() for word in [" the ", " which ", " what ", " where ", " who "])
-            if sig not in seen_sigs and not self.history.seen(q) and not is_english:
-                seen_sigs.add(sig)
-                unique_candidates.append(q)
+            # 2. Fallback para Local JSON
+            if len(candidates) < (count - len(selected)):
+                candidates.extend(self._from_local_json(10))
 
-        # 3. Fallback final: Gerador Sintético em PT-BR
-        if len(unique_candidates) < count:
-            while len(unique_candidates) < count:
-                q = self._make_math_question()
+            # Filtragem rigorosa
+            for q in candidates:
+                if len(selected) >= count:
+                    break
+                
+                # Verifica se é inglês (filtro de segurança)
+                is_english = any(word in q.question.lower() for word in [" the ", " which ", " what ", " where ", " who "])
+                if is_english:
+                    continue
+
                 if not self.history.seen(q):
-                    unique_candidates.append(q)
+                    selected.append(q)
+                    # Adiciona ao histórico imediatamente para evitar repetição no mesmo lote
+                    self.history.add_many([q])
+                    logger.info(f"Pergunta inédita selecionada: {q.question[:50]}...")
 
-        selected = unique_candidates[:count]
-        self.history.add_many(selected)
+        # 3. Fallback final: Gerador Sintético se nada mais funcionar
+        while len(selected) < count:
+            q = self._make_math_question()
+            if not self.history.seen(q):
+                selected.append(q)
+                self.history.add_many([q])
+
         return selected
 
     def _from_openai(self, limit: int) -> list[QuizQuestion]:
@@ -133,20 +165,19 @@ class QuestionGenerator:
         
         topics = ["Direito Administrativo", "Língua Portuguesa", "Raciocínio Lógico", "História do Brasil", "Geografia do Brasil", "Conhecimentos Gerais", "Atualidades Brasileiras"]
         topic = random.choice(topics)
-        random_seed = random.randint(1, 10000)
         
+        # Instrução explícita para não repetir temas comuns
         prompt = (
-            f"Você é um especialista em concursos públicos brasileiros. (Seed: {random_seed})\n"
             f"Gere {limit} perguntas de múltipla escolha INÉDITAS e EXCLUSIVAMENTE EM PORTUGUÊS BRASILEIRO sobre {topic}.\n"
-            "As perguntas devem ser no estilo de bancas como FGV, CESPE ou FCC.\n"
-            "NÃO use inglês em nenhuma parte da resposta.\n"
-            "Formato JSON estrito:\n"
+            "As perguntas devem ser de nível de concurso público (FGV, CESPE).\n"
+            "IMPORTANTE: Não gere perguntas óbvias ou que você já tenha gerado recentemente.\n"
+            "Formato JSON:\n"
             '{"questions":[{"category":"...","hook":"...","question":"...","options":["A","B","C","D"],"correct_index":0,"explanation":"..."}]}'
         )
 
         completion = client.chat.completions.create(
             model=settings.ai.openai_model,
-            messages=[{"role": "system", "content": "Você é um assistente que só fala Português Brasileiro e responde apenas em JSON."}, {"role": "user", "content": prompt}],
+            messages=[{"role": "system", "content": "Você é um especialista em concursos brasileiros. Responda apenas em JSON."}, {"role": "user", "content": prompt}],
             temperature=1.0,
         )
         
@@ -172,15 +203,15 @@ class QuestionGenerator:
             return []
 
     def _make_math_question(self) -> QuizQuestion:
-        a, b = random.randint(10, 50), random.randint(2, 9)
+        a, b = random.randint(10, 99), random.randint(2, 9)
         res = a * b
         opts = list({res, res+10, res-10, res+5})
-        while len(opts) < 4: opts.append(res + random.randint(1, 20))
+        while len(opts) < 4: opts.append(res + random.randint(1, 30))
         random.shuffle(opts)
         return QuizQuestion(
-            id=f"math_{a}_{b}",
+            id=f"math_{a}_{b}_{random.randint(0,1000)}",
             category="matemática",
-            hook="Desafio de lógica",
+            hook="Desafio rápido",
             question=f"Quanto é {a} vezes {b}?",
             options=[str(o) for o in opts],
             correct_index=opts.index(res),

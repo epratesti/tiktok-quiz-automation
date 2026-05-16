@@ -53,6 +53,33 @@
       "correct_index": 2,
       "explanation": "O Oceano Pacífico é o maior do planeta.",
       "difficulty": "facil"
+    },
+    {
+      "category": "História do Brasil",
+      "hook": "História do Brasil: você sabe quem descobriu?",
+      "question": "Em que ano o Brasil foi descoberto pelos portugueses?",
+      "options": ["1492", "1500", "1530", "1822"],
+      "correct_index": 1,
+      "explanation": "O Brasil foi descoberto em 22 de abril de 1500 por Pedro Álvares Cabral.",
+      "difficulty": "facil"
+    },
+    {
+      "category": "Geografia do Brasil",
+      "hook": "Geografia: você conhece o nosso território?",
+      "question": "Qual é o maior estado do Brasil em extensão territorial?",
+      "options": ["Minas Gerais", "Mato Grosso", "Amazonas", "Pará"],
+      "correct_index": 2,
+      "explanation": "O Amazonas é o maior estado brasileiro.",
+      "difficulty": "medio"
+    },
+    {
+      "category": "Direito Administrativo",
+      "hook": "Mais uma de Administrativo para não errar!",
+      "question": "O princípio da impessoalidade na Administração Pública veda:",
+      "options": ["A publicidade de atos", "A promoção pessoal de agentes", "A eficiência nos serviços", "A legalidade dos processos"],
+      "correct_index": 1,
+      "explanation": "A impessoalidade impede que o agente público use a máquina para promoção pessoal.",
+      "difficulty": "medio"
     }
   ]
 }
