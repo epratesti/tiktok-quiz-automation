@@ -2,7 +2,6 @@ name: TikTok Quiz Automation
 
 on:
   schedule:
-    # 00, 06, 12 e 18 UTC = 21, 03, 09 e 15 no horario de Brasilia.
     - cron: "0 0,6,12,18 * * *"
   workflow_dispatch:
 
@@ -19,17 +18,10 @@ jobs:
       EDGE_TTS_RATE: ${{ secrets.EDGE_TTS_RATE || '+5%' }}
       EDGE_TTS_PITCH: ${{ secrets.EDGE_TTS_PITCH || '+0Hz' }}
       EDGE_TTS_VOLUME: ${{ secrets.EDGE_TTS_VOLUME || '+0%' }}
-      ELEVENLABS_API_KEY: ${{ secrets.ELEVENLABS_API_KEY }}
-      ELEVENLABS_VOICE_ID: ${{ secrets.ELEVENLABS_VOICE_ID }}
-      ELEVENLABS_MODEL: ${{ secrets.ELEVENLABS_MODEL || 'eleven_multilingual_v2' }}
-      ELEVENLABS_STABILITY: ${{ secrets.ELEVENLABS_STABILITY || '0.38' }}
-      ELEVENLABS_SIMILARITY: ${{ secrets.ELEVENLABS_SIMILARITY || '0.82' }}
-      ELEVENLABS_STYLE: ${{ secrets.ELEVENLABS_STYLE || '0.42' }}
-      ELEVENLABS_SPEAKER_BOOST: ${{ secrets.ELEVENLABS_SPEAKER_BOOST || 'true' }}
       OPENAI_ENABLED: ${{ secrets.OPENAI_ENABLED || 'false' }}
       OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
       OPENAI_MODEL: ${{ secrets.OPENAI_MODEL || 'gpt-4o-mini' }}
-      OPENTRIVIA_ENABLED: ${{ secrets.OPENTRIVIA_ENABLED || 'true' }}
+      OPENTRIVIA_ENABLED: "false"
       TIKTOK_UPLOAD_ENABLED: "false"
       TIKTOK_USERNAME: ${{ secrets.TIKTOK_USERNAME }}
       TIKTOK_STORAGE_STATE: data/tiktok_state.json
@@ -38,6 +30,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Setup Python
         uses: actions/setup-python@v5
@@ -57,6 +51,15 @@ jobs:
 
       - name: Generate videos only
         run: python main.py --videos 2 --no-upload
+
+      - name: Persist Question History
+        if: always()
+        run: |
+          git config --global user.name "GitHub Action"
+          git config --global user.email "action@github.com"
+          git add data/question_history.json
+          git commit -m "Update question history [skip ci]" || echo "No changes to commit"
+          git push origin main || echo "Failed to push history"
 
       - name: Upload generated artifacts
         if: always()
