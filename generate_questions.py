@@ -4,6 +4,7 @@ import hashlib
 import html
 import json
 import logging
+import os
 import random
 import re
 from dataclasses import asdict, dataclass
@@ -142,8 +143,8 @@ class QuestionGenerator:
         if not settings.ai.openai_enabled or not settings.ai.openai_api_key:
             return []
         
-        from openai import OpenAI
-        client = OpenAI(api_key=settings.ai.openai_api_key)
+        import openai
+        client = openai.OpenAI(api_key=settings.ai.openai_api_key)
         
         # Usa um tópico aleatório de concurso para variar as perguntas
         topics = ["Direito Administrativo", "Língua Portuguesa", "Raciocínio Lógico", "História do Brasil", "Geografia Geral", "Conhecimentos Gerais", "Atualidades"]
@@ -238,3 +239,6 @@ class QuestionGenerator:
 
     def _stable_id(self, text: str) -> str:
         return hashlib.sha256(text.encode()).hexdigest()[:12]
+
+def question_to_dict(question: QuizQuestion) -> dict[str, Any]:
+    return asdict(question)
