@@ -138,7 +138,8 @@ class QuestionGenerator:
 
         for source in sources:
             try:
-                candidates.extend(source(max(count * 4, 8)))
+                # Pede mais candidatos para garantir que teremos frescos
+                candidates.extend(source(max(count * 10, 20)))
             except (requests.RequestException, json.JSONDecodeError, ValueError, RuntimeError) as exc:
                 logger.warning("Fonte de perguntas %s falhou: %s", source.__name__, exc)
             except Exception as exc:  # noqa: BLE001 - source fallback should keep pipeline alive
@@ -146,18 +147,22 @@ class QuestionGenerator:
 
             unique = self._dedupe(candidates)
             fresh = [question for question in unique if not self.history.seen(question)]
+            
             if len(fresh) >= count:
                 selected = self._select_balanced(fresh, count)
                 self.history.add_many(selected)
-                logger.info("Lote de %s perguntas gerado e salvo no historico.", len(selected))
+                logger.info("Lote de %s perguntas frescas gerado e salvo no historico.", len(selected))
                 return selected
 
-        # Se não houver perguntas frescas suficientes, usa o que tiver (mesmo que repetidas)
-        # mas prioriza as únicas
+        # Se não houver perguntas frescas suficientes, tenta usar o que tem, mas avisa
         all_unique = self._dedupe(candidates)
+        if not all_unique:
+            logger.error("Nenhuma pergunta encontrada em nenhuma fonte!")
+            return []
+            
         selected = self._select_balanced(all_unique, count)
         self.history.add_many(selected)
-        logger.warning("Apenas %s perguntas frescas encontradas. Usando repetidas para completar o lote.", len(fresh))
+        logger.warning("Apenas %s perguntas frescas encontradas. Usando repetidas para completar o lote.", len([q for q in selected if not self.history.seen(q)]))
         return selected
 
     def _from_local_json(self, limit: int) -> list[QuizQuestion]:
@@ -175,7 +180,7 @@ class QuestionGenerator:
         if requests is None:
             logger.warning("Pacote requests nao instalado; pulando Open Trivia DB.")
             return []
-        amount = min(max(limit, 1), 20)
+        amount = min(max(limit, 1), 50)
         response = requests.get(
             "https://opentdb.com/api.php",
             params={"amount": amount, "type": "multiple"},
@@ -221,7 +226,7 @@ class QuestionGenerator:
             "explicação curta e hook de retenção. Responda somente JSON válido no formato "
             '{"questions":[{"category":"...","hook":"...","question":"...",'
             '"options":["A","B","C","D"],"correct_index":0,"explanation":"..."}]}. '
-            f"Categoria preferida: {category}. Quantidade: {min(limit, 6)}."
+            f"Categoria preferida: {category}. Quantidade: {min(limit, 10)}."
         )
         completion = client.chat.completions.create(
             model=settings.ai.openai_model,
@@ -242,21 +247,35 @@ class QuestionGenerator:
         return generated[:limit]
 
     def _make_math_question(self) -> QuizQuestion:
-        a = random.randint(8, 32)
-        b = random.choice([3, 4, 5, 6, 7, 8, 9])
-        correct = a * b
-        options = sorted({correct, correct + random.randint(2, 12), correct - random.randint(2, 12), correct + b})
+        a = random.randint(8, 50)
+        b = random.randint(3, 12)
+        op = random.choice(["+", "-", "x"])
+        if op == "+":
+            correct = a + b
+            question_text = f"Quanto é {a} + {b}?"
+        elif op == "-":
+            a, b = max(a, b), min(a, b)
+            correct = a - b
+            question_text = f"Quanto é {a} - {b}?"
+        else:
+            correct = a * b
+            question_text = f"Quanto é {a} x {b}?"
+            
+        options = {correct, correct + random.randint(1, 5), correct - random.randint(1, 5), correct + 10}
         while len(options) < 4:
-            options.append(correct + random.randint(-20, 20))
-            options = sorted(set(options))
+            options.add(correct + random.randint(-20, 20))
+        
+        options_list = sorted(list(options))
+        random.shuffle(options_list)
+        
         return QuizQuestion(
-            id=self._stable_id(f"{a}x{b}"),
+            id=self._stable_id(question_text),
             category="matemática",
             hook=random.choice(HOOKS),
-            question=f"Quanto é {a} x {b}?",
-            options=[str(option) for option in options[:4]],
-            correct_index=options[:4].index(correct),
-            explanation=f"{a} vezes {b} é {correct}.",
+            question=question_text,
+            options=[str(option) for option in options_list],
+            correct_index=options_list.index(correct),
+            explanation=f"A resposta correta é {correct}.",
             source="synthetic",
             difficulty="facil",
         )
@@ -293,15 +312,7 @@ class QuestionGenerator:
 
     def _select_balanced(self, questions: list[QuizQuestion], count: int) -> list[QuizQuestion]:
         random.shuffle(questions)
-        selected: list[QuizQuestion] = []
-        categories_seen: set[str] = set()
-        for question in questions:
-            if question.category not in categories_seen or len(selected) + len(categories_seen) >= count:
-                selected.append(question)
-                categories_seen.add(question.category)
-            if len(selected) == count:
-                break
-        return selected[:count]
+        return questions[:count]
 
     def _stable_id(self, text: str) -> str:
         return hashlib.sha256(text.encode("utf-8")).hexdigest()[:12]
@@ -321,11 +332,6 @@ class QuestionGenerator:
         return "curiosidades"
 
     def _pt_hint(self, question: str) -> str:
-        """Melhora perguntas do OpenTrivia mantendo a estrutura em inglês quando necessário."""
-        # Para agora, mantém como está. Implementação futura pode usar OpenAI para tradução.
-        # Exemplo de uso futuro:
-        # if settings.ai.openai_enabled:
-        #     return self._translate_with_openai(question)
         return question
 
 
