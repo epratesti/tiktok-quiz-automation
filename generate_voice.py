@@ -161,6 +161,8 @@ class VoiceGenerator:
         answer = natural_voice_text(question.correct_answer)
         cta_text = natural_voice_text(cta)
         answer_letter = "ABCD"[question.correct_index]
+        
+        # Script original de 60 segundos
         return [
             {"start": 0.2, "end": 4.4, "text": f"{hook}. Presta atenção: essa vale ponto."},
             {"start": 5.2, "end": 11.0, "text": question_text},
@@ -178,31 +180,30 @@ class VoiceGenerator:
 
     def generate(self, question: QuizQuestion, video_id: str, cta: str) -> NarrationResult:
         script = self.build_script(question, cta)
-        output_path = settings.paths.voices / f"{video_id}_narration.wav"
-        temp_dir = settings.paths.temp / video_id / "voice"
-        temp_dir.mkdir(parents=True, exist_ok=True)
+        return self._generate_audio_from_script(script, video_id, 60.0)
 
-        base = AudioSegment.silent(duration=settings.video.duration * 1000)
-        for index, item in enumerate(script):
-            segment_path = temp_dir / f"{index:02d}.mp3"
-            try:
-                self._generate_segment(item["text"], segment_path)
-                segment = self._load_segment(segment_path)
-                segment = self._polish_voice_segment(segment + settings.voice.volume_db)
-            except Exception as exc:  # noqa: BLE001 - TTS fallback keeps render alive
-                logger.warning("TTS falhou, usando silencio para segmento %s: %s", index, exc)
-                segment = AudioSegment.silent(duration=max(1200, int((item["end"] - item["start"]) * 1000)))
-            base = base.overlay(segment, position=int(item["start"] * 1000))
+    def generate_multi_question(self, questions: list[QuizQuestion], video_id: str, cta: str) -> NarrationResult:
+        """Gera narração para múltiplas perguntas em sequência."""
+        full_script = []
+        
+        for idx, question in enumerate(questions):
+            # Apenas a última pergunta tem o CTA final
+            current_cta = cta if idx == len(questions) - 1 else ""
+            q_script = self.build_script(question, current_cta)
+            
+            offset = idx * 60.0
+            for item in q_script:
+                full_script.append({
+                    "start": item["start"] + offset,
+                    "end": item["end"] + offset,
+                    "text": item["text"],
+                    "question_idx": idx
+                })
+        
+        total_duration = len(questions) * 60.0
+        return self._generate_audio_from_script(full_script, video_id, total_duration)
 
-        base.export(output_path, format="wav")
-        return NarrationResult(audio_path=output_path, script=script, duration=settings.video.duration)
-
-    def generate_multi_question(self, multi_script, video_id: str):
-        """Gera narração para múltiplas perguntas em um único vídeo."""
-        return self._generate_audio_from_script(multi_script.segments, video_id, multi_script.total_duration)
-    
-    def _generate_audio_from_script(self, script: list, video_id: str, duration: float):
-        """Gera áudio a partir de um script de segmentos."""
+    def _generate_audio_from_script(self, script: list[dict], video_id: str, duration: float) -> NarrationResult:
         output_path = settings.paths.voices / f"{video_id}_narration.wav"
         temp_dir = settings.paths.temp / video_id / "voice"
         temp_dir.mkdir(parents=True, exist_ok=True)
@@ -220,7 +221,6 @@ class VoiceGenerator:
             base = base.overlay(segment, position=int(item["start"] * 1000))
 
         base.export(output_path, format="wav")
-        from generate_voice import NarrationResult
         return NarrationResult(audio_path=output_path, script=script, duration=duration)
 
     def _polish_voice_segment(self, segment: AudioSegment) -> AudioSegment:
@@ -255,7 +255,7 @@ class VoiceGenerator:
                 if output_path.exists() and output_path.stat().st_size > 0:
                     return
                 errors.append(f"{provider}: arquivo de audio vazio")
-            except Exception as exc:  # noqa: BLE001 - fallback providers keep pipeline resilient
+            except Exception as exc:
                 errors.append(f"{provider}: {exc}")
         raise RuntimeError("Todos os provedores TTS falharam. " + " | ".join(errors))
 

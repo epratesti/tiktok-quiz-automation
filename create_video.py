@@ -54,9 +54,41 @@ def clip_resize(clip: Any, **kwargs: Any) -> Any:
 
 class VideoCreator:
     def create(self, question: QuizQuestion, narration: NarrationResult, video_id: str | None = None, cta: str | None = None) -> dict[str, Path]:
-        return self.create_multi_question([question], narration, video_id, cta)
+        video_id = video_id or f"quiz_{uuid.uuid4().hex[:10]}"
+        theme_name = random.choice(settings.templates)
+        output_mp4 = settings.paths.output / f"{video_id}.mp4"
+        output_srt = settings.paths.output / f"{video_id}.srt"
+        output_thumb = settings.paths.output / f"{video_id}_thumb.jpg"
+        final_audio = settings.paths.temp / f"{video_id}_final_audio.mp3"
+
+        settings.paths.output.mkdir(parents=True, exist_ok=True)
+        settings.paths.temp.mkdir(parents=True, exist_ok=True)
+
+        logger.info("Renderizando video %s com tema %s", video_id, theme_name)
+        video = self._build_video_clip(question, narration, theme_name)
+        audio_path = self._build_audio(narration.audio_path, final_audio, narration.duration)
+        audio = AudioFileClip(str(audio_path))
+        video = clip_audio(video, audio)
+
+        video.write_videofile(
+            str(output_mp4),
+            fps=settings.video.fps,
+            codec="libx264",
+            audio_codec="aac",
+            preset=settings.video.render_preset,
+            ffmpeg_params=["-crf", str(settings.video.crf), "-pix_fmt", "yuv420p", "-movflags", "+faststart"],
+            threads=4,
+        )
+        audio.close()
+        video.close()
+
+        segments = build_segments_from_script(narration.script)
+        write_srt(segments, output_srt)
+        thumbnail_image(question.question, question.correct_answer, theme_name).save(output_thumb, quality=92)
+        return {"video": output_mp4, "subtitles": output_srt, "thumbnail": output_thumb}
 
     def create_multi_question(self, questions: list[QuizQuestion], narration: NarrationResult, video_id: str | None = None, cta: str | None = None) -> dict[str, Path]:
+        """Cria um vídeo concatenando o layout original para cada pergunta."""
         video_id = video_id or f"quiz_{uuid.uuid4().hex[:10]}"
         theme_name = random.choice(settings.templates)
         output_mp4 = settings.paths.output / f"{video_id}.mp4"
@@ -69,8 +101,30 @@ class VideoCreator:
 
         logger.info("Renderizando video multi-pergunta %s com tema %s", video_id, theme_name)
         
-        # O script da narração contém os tempos exatos de cada segmento
-        video = self._build_multi_video_clip(questions, narration, theme_name, cta)
+        all_clips = []
+        for idx, question in enumerate(questions):
+            offset = idx * 60.0
+            # Filtrar script para esta pergunta e ajustar tempos
+            q_script = []
+            for s in narration.script:
+                if s.get("question_idx") == idx:
+                    new_s = s.copy()
+                    new_s["start"] -= offset
+                    new_s["end"] -= offset
+                    q_script.append(new_s)
+            
+            q_narration = NarrationResult(
+                audio_path=narration.audio_path,
+                script=q_script,
+                duration=60.0
+            )
+                
+            q_clip = self._build_video_clip(question, q_narration, theme_name)
+            q_clip = clip_start(q_clip, offset)
+            all_clips.append(q_clip)
+
+        video = CompositeVideoClip(all_clips, size=(settings.video.width, settings.video.height))
+        video = clip_duration(video, narration.duration)
         
         audio_path = self._build_audio(narration.audio_path, final_audio, narration.duration)
         audio = AudioFileClip(str(audio_path))
@@ -90,90 +144,55 @@ class VideoCreator:
 
         segments = build_segments_from_script(narration.script)
         write_srt(segments, output_srt)
-        
-        # Thumbnail baseada na primeira pergunta
         thumbnail_image(questions[0].question, questions[0].correct_answer, theme_name).save(output_thumb, quality=92)
-        
         return {"video": output_mp4, "subtitles": output_srt, "thumbnail": output_thumb}
 
-    def _build_multi_video_clip(self, questions: list[QuizQuestion], narration: NarrationResult, theme_name: str, cta: str | None) -> Any:
+    def _build_video_clip(self, question: QuizQuestion, narration: NarrationResult, theme_name: str) -> Any:
         width, height = settings.video.width, settings.video.height
-        duration = narration.duration
+        duration = 60.0 # Layout original é baseado em 60s
         clips = [self._background_clip(theme_name, duration)]
 
-        # Mapear segmentos por tipo e índice de pergunta
-        segments = narration.script
-        
-        for q_idx, question in enumerate(questions):
-            # Encontrar tempos para esta pergunta
-            q_segments = [s for s in segments if s.get("question_idx") == q_idx]
-            if not q_segments:
-                continue
-                
-            q_start = q_segments[0]["start"]
-            q_end = q_segments[-1]["end"]
-            
-            # Hook e Título da Categoria
-            hook_seg = next((s for s in q_segments if s["type"] == "hook"), q_segments[0])
-            title_img = text_panel(f"{question.hook}\nPERGUNTA {q_idx + 1}", width - 100, 72, theme_name)
-            clips.append(self._image_clip(title_img, hook_seg["start"], hook_seg["end"] - hook_seg["start"], ("center", 240)))
+        title_img = text_panel(f"{question.hook}\nQUIZ {question.category.upper()}", width - 100, 72, theme_name)
+        clips.append(self._image_clip(title_img, 0, 5, ("center", 240)))
 
-            # Pergunta
-            question_seg = next((s for s in q_segments if s["type"] == "question"), None)
-            if question_seg:
-                # A pergunta fica visível desde o início até a revelação
-                reveal_seg = next((s for s in q_segments if s["type"] == "answer"), q_segments[-1])
-                question_img = text_panel(question.question, width - 100, 68, theme_name, padding=38)
-                clips.append(self._image_clip(question_img, question_seg["start"], reveal_seg["start"] - question_seg["start"], ("center", 190)))
+        question_img = text_panel(question.question, width - 100, 68, theme_name, padding=38)
+        clips.append(self._image_clip(question_img, 5, 40, ("center", 190)))
 
-            # Opções
-            option_segs = [s for s in q_segments if s["type"] == "option"]
-            option_width = width - 330
-            option_x = 70
-            for opt_idx, opt_seg in enumerate(option_segs):
-                if opt_idx < len(question.options):
-                    panel = option_panel("ABCD"[opt_idx], question.options[opt_idx], option_width, theme_name)
-                    # Opção aparece quando é falada e fica até o suspense
-                    suspense_seg = next((s for s in q_segments if s["type"] == "suspense"), q_segments[-1])
-                    clips.append(self._image_clip(panel, opt_seg["start"], suspense_seg["end"] - opt_seg["start"], (option_x, 610 + opt_idx * 180)))
+        option_width = width - 330
+        option_x = 70
+        for index, option in enumerate(question.options):
+            panel = option_panel("ABCD"[index], option, option_width, theme_name)
+            clips.append(self._image_clip(panel, 8 + index * 1.0, 37 - index * 0.2, (option_x, 610 + index * 180)))
 
-            # Timer (durante o suspense)
-            suspense_seg = next((s for s in q_segments if s["type"] == "suspense"), None)
-            if suspense_seg:
-                suspense_dur = suspense_seg["end"] - suspense_seg["start"]
-                timer = VideoClip(lambda t: timer_frame(t, suspense_dur, theme_name), duration=suspense_dur)
-                clips.append(clip_position(clip_start(timer, suspense_seg["start"]), (width - 176, 620)))
-                
-                suspense_text = text_panel("RESPONDA AGORA...", width - 140, 82, theme_name, padding=40)
-                clips.append(self._image_clip(suspense_text, suspense_seg["start"], suspense_dur, ("center", 740)))
+        timer = VideoClip(lambda t: timer_frame(t, 40, theme_name), duration=40)
+        clips.append(clip_position(clip_start(timer, 5), (width - 176, 620)))
 
-            # Revelação da Resposta
-            reveal_seg = next((s for s in q_segments if s["type"] == "answer"), None)
-            if reveal_seg:
-                reveal_img = text_panel(
-                    f"RESPOSTA: {'ABCD'[question.correct_index]}\n{question.correct_answer}",
-                    width - 100,
-                    78,
-                    theme_name,
-                    padding=42,
-                )
-                clips.append(self._image_clip(reveal_img, reveal_seg["start"], reveal_seg["end"] - reveal_seg["start"], ("center", 520)))
+        suspense = text_panel("RESPONDA AGORA...", width - 140, 82, theme_name, padding=40)
+        clips.append(self._image_clip(suspense, 45, 10, ("center", 740)))
 
-        # CTA Final
-        cta_seg = next((s for s in segments if s["type"] == "cta"), None)
-        if cta_seg:
-            cta_text = cta or "Comente quantas você acertou"
-            cta_panel = text_panel(cta_text, width - 140, 54, theme_name, padding=30)
-            clips.append(self._image_clip(cta_panel, cta_seg["start"], cta_seg["end"] - cta_seg["start"], ("center", 1320)))
+        reveal = text_panel(
+            f"RESPOSTA: {'ABCD'[question.correct_index]}\n{question.correct_answer}",
+            width - 100,
+            78,
+            theme_name,
+            padding=42,
+        )
+        clips.append(self._image_clip(reveal, 55, 5, ("center", 520)))
 
-        # Barra de Progresso Geral
+        cta_text = "Comente quantas você acertou"
+        cta_panel = text_panel(cta_text, width - 140, 54, theme_name, padding=30)
+        clips.append(self._image_clip(cta_panel, 55.3, 4.7, ("center", 1320)))
+
         progress = VideoClip(lambda t: progress_frame(t, duration, width, theme_name), duration=duration)
         clips.append(clip_position(progress, ("center", height - 64)))
 
-        # Legendas Dinâmicas
         for segment in build_segments_from_script(narration.script):
-            # Ajustar posição Y dependendo do tipo de segmento
-            y = 1460
+            if segment.start >= 55:
+                y = 1530
+            elif segment.start < 5:
+                y = 1260
+            else:
+                y = 1460
             img = text_panel(segment.text, width - 160, 44, theme_name, padding=24, highlight=segment.emphasis)
             clips.append(self._image_clip(img, segment.start, max(0.8, segment.end - segment.start), ("center", y)))
 

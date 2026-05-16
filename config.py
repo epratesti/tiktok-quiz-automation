@@ -62,7 +62,7 @@ class VideoSettings:
     width: int = env_int("VIDEO_WIDTH", 1080)
     height: int = env_int("VIDEO_HEIGHT", 1920)
     fps: int = env_int("VIDEO_FPS", 30)
-    duration: int = env_int("VIDEO_DURATION", 90)  # Aumentado para suportar 3 perguntas individuais
+    duration: int = env_int("VIDEO_DURATION", 60)
     batch_size: int = env_int("VIDEOS_PER_RUN", 2)
     render_preset: str = os.getenv("FFMPEG_PRESET", "medium")
     crf: int = env_int("FFMPEG_CRF", 20)
