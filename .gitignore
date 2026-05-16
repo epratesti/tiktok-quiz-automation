@@ -5,7 +5,7 @@ venv/
 .env
 .env.local
 data/tiktok_state.json
-data/question_history.json
+# data/question_history.json
 data/analytics.jsonl
 logs/*.log
 temp/*

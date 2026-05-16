@@ -103,7 +103,7 @@ class TikTokSettings:
 @dataclass(frozen=True)
 class AISettings:
     openai_api_key: str = os.getenv("OPENAI_API_KEY", "")
-    openai_model: str = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
+    openai_model: str = os.getenv("OPENAI_MODEL", "gpt-4.1-mini")
     openai_enabled: bool = env_bool("OPENAI_ENABLED", bool(os.getenv("OPENAI_API_KEY")))
     opentrivia_enabled: bool = env_bool("OPENTRIVIA_ENABLED", True)
 
