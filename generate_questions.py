@@ -7,6 +7,7 @@ import logging
 import os
 import random
 import re
+import time
 from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any
@@ -59,7 +60,7 @@ HOOKS = [
 
 
 class QuestionHistory:
-    def __init__(self, path: Path, limit: int = 5000) -> None:
+    def __init__(self, path: Path, limit: int = 10000) -> None:
         self.path = path
         self.limit = limit
         self.path.parent.mkdir(parents=True, exist_ok=True)
@@ -88,11 +89,16 @@ class QuestionHistory:
         return is_seen
 
     def add_many(self, questions: list[QuizQuestion]) -> None:
+        changed = False
         for question in questions:
             sig = question.signature()
             if sig not in self.signatures:
                 self.signatures.append(sig)
+                changed = True
         
+        if not changed:
+            return
+
         # Mantém o histórico dentro do limite
         self.signatures = self.signatures[-self.limit :]
         
@@ -111,43 +117,46 @@ class QuestionGenerator:
         self.history = QuestionHistory(settings.paths.history_json)
 
     def generate_batch(self, count: int = 3) -> list[QuizQuestion]:
-        """Gera perguntas inéditas em Português Brasileiro."""
+        """Gera perguntas inéditas em Português Brasileiro usando múltiplas fontes."""
         selected: list[QuizQuestion] = []
-        max_attempts = 5
+        max_attempts = 10
         attempt = 0
+
+        # Fontes disponíveis em ordem de preferência
+        sources = [
+            self._from_openai,
+            self._from_open_trivia,
+            self._from_local_json
+        ]
 
         while len(selected) < count and attempt < max_attempts:
             attempt += 1
-            candidates: list[QuizQuestion] = []
+            random.shuffle(sources) # Diversifica a fonte inicial
             
-            # 1. Tenta OpenAI (Sempre em PT-BR)
-            try:
-                needed = count - len(selected)
-                candidates.extend(self._from_openai(needed * 3))
-            except Exception as e:
-                logger.warning(f"Falha OpenAI: {e}")
-
-            # 2. Fallback para Local JSON
-            if len(candidates) < (count - len(selected)):
-                candidates.extend(self._from_local_json(10))
-
-            # Filtragem rigorosa
-            for q in candidates:
+            for source_func in sources:
                 if len(selected) >= count:
                     break
-                
-                # Verifica se é inglês (filtro de segurança)
-                is_english = any(word in q.question.lower() for word in [" the ", " which ", " what ", " where ", " who "])
-                if is_english:
-                    continue
+                    
+                try:
+                    needed = count - len(selected)
+                    candidates = source_func(needed * 2)
+                    
+                    for q in candidates:
+                        if len(selected) >= count:
+                            break
+                        
+                        # Filtro de segurança para perguntas vazias ou muito curtas
+                        if not q.question or len(q.question) < 10:
+                            continue
 
-                if not self.history.seen(q):
-                    selected.append(q)
-                    # Adiciona ao histórico imediatamente para evitar repetição no mesmo lote
-                    self.history.add_many([q])
-                    logger.info(f"Pergunta inédita selecionada: {q.question[:50]}...")
+                        if not self.history.seen(q):
+                            selected.append(q)
+                            self.history.add_many([q])
+                            logger.info(f"Pergunta inédita ({q.source}): {q.question[:50]}...")
+                except Exception as e:
+                    logger.warning(f"Fonte {source_func.__name__} falhou: {e}")
 
-        # 3. Fallback final: Gerador Sintético se nada mais funcionar
+        # Fallback final: Gerador Sintético (Matemática) para nunca retornar vazio
         while len(selected) < count:
             q = self._make_math_question()
             if not self.history.seen(q):
@@ -163,33 +172,115 @@ class QuestionGenerator:
         from openai import OpenAI
         client = OpenAI()
         
-        topics = ["Direito Administrativo", "Língua Portuguesa", "Raciocínio Lógico", "História do Brasil", "Geografia do Brasil", "Conhecimentos Gerais", "Atualidades Brasileiras"]
+        # Lista expandida de tópicos para evitar repetição de temas
+        topics = [
+            "Direito Administrativo (Licitações, Atos)", 
+            "Língua Portuguesa (Crase, Concordância)", 
+            "Raciocínio Lógico (Silogismos, Probabilidade)", 
+            "História do Brasil (Império, República Velha)", 
+            "Geografia do Brasil (Biomas, Relevo)", 
+            "Conhecimentos Gerais (Ciência, Tecnologia)", 
+            "Atualidades Brasileiras (Economia, Política)",
+            "Culinária Brasileira",
+            "Esportes no Brasil",
+            "Cinema e Cultura Brasileira"
+        ]
         topic = random.choice(topics)
         
-        # Instrução explícita para não repetir temas comuns
         prompt = (
-            f"Gere {limit} perguntas de múltipla escolha INÉDITAS e EXCLUSIVAMENTE EM PORTUGUÊS BRASILEIRO sobre {topic}.\n"
-            "As perguntas devem ser de nível de concurso público (FGV, CESPE).\n"
-            "IMPORTANTE: Não gere perguntas óbvias ou que você já tenha gerado recentemente.\n"
-            "Formato JSON:\n"
+            f"Gere {limit} perguntas de múltipla escolha ÚNICAS e EXCLUSIVAMENTE EM PORTUGUÊS BRASILEIRO sobre {topic}.\n"
+            "Varie os subtemas para não repetir o que é óbvio.\n"
+            "Formato JSON estrito:\n"
             '{"questions":[{"category":"...","hook":"...","question":"...","options":["A","B","C","D"],"correct_index":0,"explanation":"..."}]}'
         )
 
-        completion = client.chat.completions.create(
-            model=settings.ai.openai_model,
-            messages=[{"role": "system", "content": "Você é um especialista em concursos brasileiros. Responda apenas em JSON."}, {"role": "user", "content": prompt}],
-            temperature=1.0,
-        )
-        
         try:
+            completion = client.chat.completions.create(
+                model=settings.ai.openai_model,
+                messages=[
+                    {"role": "system", "content": "Você é um gerador de quiz criativo. Nunca repita perguntas anteriores."},
+                    {"role": "user", "content": prompt}
+                ],
+                temperature=1.1, # Aumenta a criatividade
+            )
             content = completion.choices[0].message.content.strip()
             if "```json" in content:
                 content = content.split("```json")[1].split("```")[0].strip()
             data = json.loads(content)
             return [self._normalize(q, "openai") for q in data.get("questions", [])]
         except Exception as e:
-            logger.error(f"Erro OpenAI JSON: {e}")
+            logger.error(f"Erro OpenAI: {e}")
             return []
+
+    def _from_open_trivia(self, limit: int) -> list[QuizQuestion]:
+        """Busca perguntas no Open Trivia DB e traduz via IA se necessário."""
+        if not requests:
+            return []
+            
+        url = f"https://opentdb.com/api.php?amount={limit}&type=multiple"
+        try:
+            response = requests.get(url, timeout=10)
+            data = response.json()
+            if data.get("response_code") != 0:
+                return []
+            
+            questions = []
+            for item in data.get("results", []):
+                q_text = html.unescape(item["question"])
+                correct = html.unescape(item["correct_answer"])
+                incorrects = [html.unescape(i) for i in item["incorrect_answers"]]
+                
+                options = incorrects + [correct]
+                random.shuffle(options)
+                
+                raw_q = {
+                    "category": html.unescape(item["category"]),
+                    "question": q_text,
+                    "options": options,
+                    "correct_index": options.index(correct),
+                    "explanation": f"A resposta correta é {correct}."
+                }
+                
+                # Traduz para Português usando a IA (se disponível) ou marca como pendente
+                translated = self._translate_question(raw_q)
+                if translated:
+                    questions.append(self._normalize(translated, "opentdb"))
+            
+            return questions
+        except Exception as e:
+            logger.error(f"Erro OpenTrivia: {e}")
+            return []
+
+    def _translate_question(self, q: dict) -> dict | None:
+        """Usa OpenAI para traduzir a pergunta mantendo o sentido."""
+        if not settings.ai.openai_enabled:
+            return None # Não queremos perguntas em inglês no TikTok brasileiro
+            
+        from openai import OpenAI
+        client = OpenAI()
+        
+        prompt = (
+            "Traduza a seguinte pergunta de quiz para Português Brasileiro de forma natural e atraente para o TikTok.\n"
+            f"Pergunta original: {q['question']}\n"
+            f"Opções: {', '.join(q['options'])}\n"
+            "Retorne APENAS o JSON no formato:\n"
+            '{"question":"...","options":["...","...","...","..."],"explanation":"..."}'
+        )
+        
+        try:
+            completion = client.chat.completions.create(
+                model=settings.ai.openai_model,
+                messages=[{"role": "user", "content": prompt}],
+                temperature=0.3
+            )
+            content = completion.choices[0].message.content.strip()
+            if "```json" in content:
+                content = content.split("```json")[1].split("```")[0].strip()
+            data = json.loads(content)
+            q.update(data)
+            return q
+        except Exception:
+            return None
 
     def _from_local_json(self, limit: int) -> list[QuizQuestion]:
         path = settings.paths.questions_json
@@ -197,6 +288,7 @@ class QuestionGenerator:
         try:
             data = json.loads(path.read_text(encoding="utf-8"))
             items = data.get("questions", [])
+            # Embaralha e pega uma amostra aleatória
             random.shuffle(items)
             return [self._normalize(i, "local_json") for i in items[:limit]]
         except Exception:
@@ -204,18 +296,21 @@ class QuestionGenerator:
 
     def _make_math_question(self) -> QuizQuestion:
         a, b = random.randint(10, 99), random.randint(2, 9)
-        res = a * b
+        ops = [("+", a+b), ("-", a-b), ("x", a*b)]
+        op_sym, res = random.choice(ops)
+        
         opts = list({res, res+10, res-10, res+5})
         while len(opts) < 4: opts.append(res + random.randint(1, 30))
         random.shuffle(opts)
+        
         return QuizQuestion(
-            id=f"math_{a}_{b}_{random.randint(0,1000)}",
+            id=f"math_{a}_{op_sym}_{b}_{time.time()}",
             category="matemática",
             hook="Desafio rápido",
-            question=f"Quanto é {a} vezes {b}?",
+            question=f"Quanto é {a} {op_sym} {b}?",
             options=[str(o) for o in opts],
             correct_index=opts.index(res),
-            explanation=f"{a} x {b} = {res}",
+            explanation=f"{a} {op_sym} {b} = {res}",
             source="synthetic"
         )
 
@@ -233,6 +328,7 @@ class QuestionGenerator:
 
     def _stable_id(self, text: str) -> str:
         return hashlib.sha256(text.encode()).hexdigest()[:12]
+
 
 def question_to_dict(question: QuizQuestion) -> dict[str, Any]:
     return asdict(question)
