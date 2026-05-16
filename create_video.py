@@ -72,7 +72,7 @@ class VideoCreator:
         # O script da narração contém os tempos exatos de cada segmento
         video = self._build_multi_video_clip(questions, narration, theme_name, cta)
         
-        audio_path = self._build_audio(narration.audio_path, final_audio)
+        audio_path = self._build_audio(narration.audio_path, final_audio, narration.duration)
         audio = AudioFileClip(str(audio_path))
         video = clip_audio(video, audio)
 
@@ -98,8 +98,8 @@ class VideoCreator:
 
     def _build_multi_video_clip(self, questions: list[QuizQuestion], narration: NarrationResult, theme_name: str, cta: str | None) -> Any:
         width, height = settings.video.width, settings.video.height
-        duration = settings.video.duration
-        clips = [self._background_clip(theme_name)]
+        duration = narration.duration
+        clips = [self._background_clip(theme_name, duration)]
 
         # Mapear segmentos por tipo e índice de pergunta
         segments = narration.script
@@ -115,14 +115,14 @@ class VideoCreator:
             
             # Hook e Título da Categoria
             hook_seg = next((s for s in q_segments if s["type"] == "hook"), q_segments[0])
-            title_img = text_panel(f"{question.hook}\nQUIZ {question.category.upper()}", width - 100, 72, theme_name)
+            title_img = text_panel(f"{question.hook}\nPERGUNTA {q_idx + 1}", width - 100, 72, theme_name)
             clips.append(self._image_clip(title_img, hook_seg["start"], hook_seg["end"] - hook_seg["start"], ("center", 240)))
 
             # Pergunta
             question_seg = next((s for s in q_segments if s["type"] == "question"), None)
             if question_seg:
                 # A pergunta fica visível desde o início até a revelação
-                reveal_seg = next((s for s in q_segments if s["type"] == "reveal"), q_segments[-1])
+                reveal_seg = next((s for s in q_segments if s["type"] == "answer"), q_segments[-1])
                 question_img = text_panel(question.question, width - 100, 68, theme_name, padding=38)
                 clips.append(self._image_clip(question_img, question_seg["start"], reveal_seg["start"] - question_seg["start"], ("center", 190)))
 
@@ -148,7 +148,7 @@ class VideoCreator:
                 clips.append(self._image_clip(suspense_text, suspense_seg["start"], suspense_dur, ("center", 740)))
 
             # Revelação da Resposta
-            reveal_seg = next((s for s in q_segments if s["type"] == "reveal"), None)
+            reveal_seg = next((s for s in q_segments if s["type"] == "answer"), None)
             if reveal_seg:
                 reveal_img = text_panel(
                     f"RESPOSTA: {'ABCD'[question.correct_index]}\n{question.correct_answer}",
@@ -179,9 +179,8 @@ class VideoCreator:
 
         return CompositeVideoClip(clips, size=(width, height))
 
-    def _background_clip(self, theme_name: str) -> Any:
+    def _background_clip(self, theme_name: str, duration: float) -> Any:
         width, height = settings.video.width, settings.video.height
-        duration = settings.video.duration
         asset = self._pick_background_asset()
         if asset:
             if asset.suffix.lower() in {".mp4", ".mov", ".webm"}:
@@ -205,18 +204,18 @@ class VideoCreator:
             candidates.extend(settings.paths.backgrounds.glob(suffix))
         return random.choice(candidates) if candidates else None
 
-    def _build_audio(self, narration_path: Path, output_path: Path) -> Path:
+    def _build_audio(self, narration_path: Path, output_path: Path, duration: float) -> Path:
         narration = AudioSegment.from_file(narration_path)
-        narration = narration[: settings.video.duration * 1000]
-        if len(narration) < settings.video.duration * 1000:
-            narration += AudioSegment.silent(duration=settings.video.duration * 1000 - len(narration))
+        narration = narration[: int(duration * 1000)]
+        if len(narration) < int(duration * 1000):
+            narration += AudioSegment.silent(duration=int(duration * 1000) - len(narration))
 
         music_path = self._pick_music_asset()
         if music_path:
             music = AudioSegment.from_file(music_path)
-            while len(music) < settings.video.duration * 1000:
+            while len(music) < int(duration * 1000):
                 music += music
-            music = music[: settings.video.duration * 1000] - 22
+            music = music[: int(duration * 1000)] - 22
             music = music.fade_in(1500).fade_out(2200)
             combined = music.overlay(narration)
         else:
