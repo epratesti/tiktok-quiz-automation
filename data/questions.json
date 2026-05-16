@@ -1,85 +1,49 @@
 {
   "questions": [
     {
-      "category": "Direito Constitucional",
-      "hook": "Questão de prova: você conhece a nossa Constituição?",
-      "question": "Qual é o cargo que pode ser ocupado apenas por brasileiros natos?",
-      "options": ["Senador", "Ministro do STF", "Governador", "Prefeito"],
-      "correct_index": 1,
-      "explanation": "Conforme a Constituição Federal de 1988, o cargo de Ministro do STF é privativo de brasileiro nato.",
-      "difficulty": "medio"
-    },
-    {
-      "category": "Língua Portuguesa",
-      "hook": "Desafio de português: essa muita gente erra em concursos!",
-      "question": "Qual é a forma correta de escrever a palavra?",
-      "options": ["Excessão", "Exceção", "Ecessão", "Excesssão"],
-      "correct_index": 1,
-      "explanation": "A forma correta é 'Exceção', com x e ç.",
+      "category": "Curiosidades",
+      "hook": "Você sabia dessa?",
+      "question": "Qual é o único animal que não consegue pular?",
+      "options": ["Elefante", "Girafa", "Rinoceronte", "Hipopótamo"],
+      "correct_index": 0,
+      "explanation": "O elefante é o único mamífero que não consegue pular devido ao seu peso e estrutura óssea.",
       "difficulty": "facil"
     },
     {
-      "category": "Direito Administrativo",
-      "hook": "Administrativo na veia! Você sabe os princípios?",
-      "question": "Qual destes NÃO é um princípio explícito da Administração Pública?",
-      "options": ["Legalidade", "Moralidade", "Eficiência", "Proporcionalidade"],
-      "correct_index": 3,
-      "explanation": "Legalidade, impessoalidade, moralidade, publicidade e eficiência são princípios explícitos. Proporcionalidade é princípio implícito.",
-      "difficulty": "dificil"
-    },
-    {
-      "category": "Atualidades",
-      "hook": "Atualidades para concursos: você está por dentro?",
-      "question": "Qual é a capital federal do Brasil?",
-      "options": ["Rio de Janeiro", "São Paulo", "Brasília", "Salvador"],
-      "correct_index": 2,
-      "explanation": "Brasília é a capital federal desde 1960.",
-      "difficulty": "facil"
-    },
-    {
-      "category": "Raciocínio Lógico",
-      "hook": "Raciocínio lógico: o terror dos concurseiros!",
-      "question": "Se todo A é B e todo B é C, então:",
-      "options": ["Todo C é A", "Algum C não é A", "Todo A é C", "Nenhum A é C"],
-      "correct_index": 2,
-      "explanation": "Pela transitividade, se A está contido em B e B está contido em C, então A está contido em C.",
-      "difficulty": "medio"
-    },
-    {
-      "category": "conhecimentos gerais",
-      "hook": "Essa parece fácil, mas muita gente erra",
-      "question": "Qual é o maior oceano do planeta?",
-      "options": ["Atlântico", "Índico", "Pacífico", "Ártico"],
-      "correct_index": 2,
-      "explanation": "O Oceano Pacífico é o maior do planeta.",
-      "difficulty": "facil"
-    },
-    {
-      "category": "História do Brasil",
-      "hook": "História do Brasil: você sabe quem descobriu?",
-      "question": "Em que ano o Brasil foi descoberto pelos portugueses?",
-      "options": ["1492", "1500", "1530", "1822"],
+      "category": "Ciência",
+      "hook": "Teste seu conhecimento científico!",
+      "question": "Qual é o planeta mais quente do sistema solar?",
+      "options": ["Mercúrio", "Vênus", "Marte", "Júpiter"],
       "correct_index": 1,
-      "explanation": "O Brasil foi descoberto em 22 de abril de 1500 por Pedro Álvares Cabral.",
+      "explanation": "Vênus é o planeta mais quente devido à sua atmosfera densa que retém o calor (efeito estufa).",
+      "difficulty": "medio"
+    },
+    {
+      "category": "Geografia",
+      "hook": "Você conhece o mundo?",
+      "question": "Qual é o menor país do mundo?",
+      "options": ["Mônaco", "Malta", "Vaticano", "San Marino"],
+      "correct_index": 2,
+      "explanation": "O Vaticano é o menor país do mundo, tanto em área quanto em população.",
       "difficulty": "facil"
     },
     {
-      "category": "Geografia do Brasil",
-      "hook": "Geografia: você conhece o nosso território?",
-      "question": "Qual é o maior estado do Brasil em extensão territorial?",
-      "options": ["Minas Gerais", "Mato Grosso", "Amazonas", "Pará"],
-      "correct_index": 2,
-      "explanation": "O Amazonas é o maior estado brasileiro.",
+      "category": "História",
+      "hook": "Voltando no tempo...",
+      "question": "Quem foi o primeiro presidente do Brasil?",
+      "options": ["Getúlio Vargas", "Deodoro da Fonseca", "Floriano Peixoto", "Prudente de Morais"],
+      "correct_index": 1,
+      "explanation": "O Marechal Deodoro da Fonseca foi o primeiro presidente do Brasil após a Proclamação da República.",
       "difficulty": "medio"
     },
     {
-      "category": "Direito Administrativo",
-      "hook": "Mais uma de Administrativo para não errar!",
-      "question": "O princípio da impessoalidade na Administração Pública veda:",
-      "options": ["A publicidade de atos", "A promoção pessoal de agentes", "A eficiência nos serviços", "A legalidade dos processos"],
-      "correct_index": 1,
-      "explanation": "A impessoalidade impede que o agente público use a máquina para promoção pessoal.",
-      "difficulty": "medio"
+      "category": "Corpo Humano",
+      "hook": "Você conhece seu próprio corpo?",
+      "question": "Qual é o maior órgão do corpo humano?",
+      "options": ["Fígado", "Cérebro", "Pele", "Intestino"],
+      "correct_index": 2,
+      "explanation": "A pele é o maior órgão do corpo humano, cobrindo toda a sua superfície externa.",
+      "difficulty": "facil"
     }
   ]
 }
