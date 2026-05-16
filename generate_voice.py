@@ -162,36 +162,36 @@ class VoiceGenerator:
         cta_text = natural_voice_text(cta)
         answer_letter = "ABCD"[question.correct_index]
         
-        # Script original de 60 segundos
+        # Script acelerado para durar ~30-35 segundos por pergunta
         return [
-            {"start": 0.2, "end": 4.4, "text": f"{hook}. Presta atenção: essa vale ponto."},
-            {"start": 5.2, "end": 11.0, "text": question_text},
-            {"start": 11.4, "end": 16.0, "text": f"Opção A: {options[0]}."},
-            {"start": 16.2, "end": 20.8, "text": f"Opção B: {options[1]}."},
-            {"start": 21.0, "end": 25.6, "text": f"Opção C: {options[2]}."},
-            {"start": 25.8, "end": 30.4, "text": f"Opção D: {options[3]}."},
-            {"start": 45.2, "end": 53.5, "text": "Pensou bem? Últimos segundos... olha a resposta."},
+            {"start": 0.2, "end": 3.5, "text": f"{hook}. Presta atenção."},
+            {"start": 4.0, "end": 8.5, "text": question_text},
+            {"start": 9.0, "end": 11.5, "text": f"A: {options[0]}."},
+            {"start": 11.8, "end": 14.3, "text": f"B: {options[1]}."},
+            {"start": 14.6, "end": 17.1, "text": f"C: {options[2]}."},
+            {"start": 17.4, "end": 19.9, "text": f"D: {options[3]}."},
+            {"start": 23.0, "end": 27.0, "text": "Tempo acabando... olha a resposta."},
             {
-                "start": 55.0,
-                "end": 59.3,
-                "text": f"A resposta correta é a letra {answer_letter}: {answer}. {cta_text}.",
+                "start": 28.0,
+                "end": 31.5,
+                "text": f"Resposta: Letra {answer_letter}. {answer}. {cta_text}.",
             },
         ]
 
     def generate(self, question: QuizQuestion, video_id: str, cta: str) -> NarrationResult:
         script = self.build_script(question, cta)
-        return self._generate_audio_from_script(script, video_id, 60.0)
+        return self._generate_audio_from_script(script, video_id, 35.0)
 
     def generate_multi_question(self, questions: list[QuizQuestion], video_id: str, cta: str) -> NarrationResult:
-        """Gera narração para múltiplas perguntas em sequência."""
+        """Gera narração para múltiplas perguntas em sequência acelerada."""
         full_script = []
+        time_per_q = 35.0
         
         for idx, question in enumerate(questions):
-            # Apenas a última pergunta tem o CTA final
             current_cta = cta if idx == len(questions) - 1 else ""
             q_script = self.build_script(question, current_cta)
             
-            offset = idx * 60.0
+            offset = idx * time_per_q
             for item in q_script:
                 full_script.append({
                     "start": item["start"] + offset,
@@ -200,7 +200,7 @@ class VoiceGenerator:
                     "question_idx": idx
                 })
         
-        total_duration = len(questions) * 60.0
+        total_duration = len(questions) * time_per_q
         return self._generate_audio_from_script(full_script, video_id, total_duration)
 
     def _generate_audio_from_script(self, script: list[dict], video_id: str, duration: float) -> NarrationResult:
