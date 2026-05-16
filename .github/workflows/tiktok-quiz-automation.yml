@@ -1,15 +1,12 @@
 name: TikTok Quiz Automation
-
 on:
   schedule:
     - cron: "0 0,6,12,18 * * *"
   workflow_dispatch:
-
 jobs:
   generate-videos:
     runs-on: ubuntu-latest
     timeout-minutes: 90
-
     env:
       DRY_RUN: "true"
       VIDEOS_PER_RUN: "2"
@@ -20,47 +17,40 @@ jobs:
       EDGE_TTS_VOLUME: ${{ secrets.EDGE_TTS_VOLUME || '+0%' }}
       OPENAI_ENABLED: ${{ secrets.OPENAI_ENABLED || 'false' }}
       OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-      OPENAI_MODEL: ${{ secrets.OPENAI_MODEL || 'gpt-4o-mini' }}
+      OPENAI_MODEL: ${{ secrets.OPENAI_MODEL || 'gpt-4.1-mini' }}
       OPENTRIVIA_ENABLED: "false"
       TIKTOK_UPLOAD_ENABLED: "false"
       TIKTOK_USERNAME: ${{ secrets.TIKTOK_USERNAME }}
       TIKTOK_STORAGE_STATE: data/tiktok_state.json
       PLAYWRIGHT_HEADLESS: "true"
-
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
           cache: "pip"
-
       - name: Install system dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y ffmpeg
-
       - name: Install Python dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-
       - name: Generate videos only
         run: python main.py --videos 2 --no-upload
-
       - name: Persist Question History
         if: always()
         run: |
           git config --global user.name "GitHub Action"
           git config --global user.email "action@github.com"
-          git add data/question_history.json
+          git add -f data/question_history.json
           git commit -m "Update question history [skip ci]" || echo "No changes to commit"
           git push origin main || echo "Failed to push history"
-
       - name: Upload generated artifacts
         if: always()
         uses: actions/upload-artifact@v4
