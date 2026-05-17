@@ -212,9 +212,13 @@ class QuestionGenerator:
         topic = random.choice(topics)
         
         prompt = (
-            f"Gere {limit} perguntas de múltipla escolha de NÍVEL DIFÍCIL (nível concurso público) sobre {topic}.\n"
-            "As perguntas devem ser desafiadoras e adequadas para quem está estudando para provas de alto nível.\n"
-            "Use Português Brasileiro formal.\n"
+            f"Gere {limit} perguntas de múltipla escolha de NÍVEL CONCURSO PÚBLICO sobre {topic}.\n"
+            "FOCO: Questões que poderiam estar em provas da FCC, FGV ou CESPE.\n"
+            "REQUISITOS:\n"
+            "1. Nível de dificuldade: Médio para Difícil.\n"
+            "2. Linguagem: Técnica e formal.\n"
+            "3. Explicação: Deve ser didática, explicando o porquê da resposta correta.\n"
+            "4. Diversidade: Não repita conceitos básicos.\n"
             "Formato JSON estrito:\n"
             '{"questions":[{"category":"...","hook":"...","question":"...","options":["A","B","C","D"],"correct_index":0,"explanation":"..."}]}'
         )
@@ -238,11 +242,14 @@ class QuestionGenerator:
             return []
 
     def _from_open_trivia(self, limit: int) -> list[QuizQuestion]:
-        """Busca perguntas no Open Trivia DB e traduz via IA se necessário."""
+        """Busca perguntas no Open Trivia DB filtrando por temas de Conhecimentos Gerais (História, Geografia, Ciência)."""
         if not requests:
             return []
             
-        url = f"https://opentdb.com/api.php?amount={limit}&type=multiple"
+        # Categorias úteis para concursos: 9 (Geral), 22 (Geografia), 23 (História), 17 (Ciência)
+        useful_categories = [9, 22, 23, 17]
+        cat = random.choice(useful_categories)
+        url = f"https://opentdb.com/api.php?amount={limit}&category={cat}&type=multiple"
         try:
             response = requests.get(url, timeout=10)
             data = response.json()
