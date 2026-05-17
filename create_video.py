@@ -151,8 +151,16 @@ class VideoCreator:
         width, height = settings.video.width, settings.video.height
         clips = [self._background_clip(theme_name, duration)]
 
-        # Título (0-4s)
-        title_img = text_panel(f"{question.hook}\nQUIZ {question.category.upper()}", width - 100, 72, theme_name)
+        # Título Dinâmico (0-4s)
+        display_category = question.category.upper()
+        # Se for matemática, tenta dar um título mais atraente de concurso
+        if "MATEMÁTICA" in display_category or "RACIOCÍNIO" in display_category:
+            display_category = "RACIOCÍNIO LÓGICO"
+        elif "OPENAI" in question.source.lower() or "opentdb" in question.source.lower():
+            # Para temas de concurso da IA, usa a categoria real ou Conhecimentos Gerais
+            if len(display_category) > 20: display_category = "CONHECIMENTOS GERAIS"
+            
+        title_img = text_panel(f"{question.hook}\nQUIZ {display_category}", width - 100, 72, theme_name)
         clips.append(self._image_clip(title_img, 0, 4, ("center", 240)))
 
         # Pergunta (4-23s)

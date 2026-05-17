@@ -117,75 +117,72 @@ class QuestionGenerator:
         self.history = QuestionHistory(settings.paths.history_json)
 
     def generate_batch(self, count: int = 3) -> list[QuizQuestion]:
-        """Gera perguntas inéditas em Português Brasileiro garantindo diversidade de temas."""
+        """Gera perguntas inéditas garantindo diversidade e eliminando dominância de matemática."""
         selected: list[QuizQuestion] = []
         categories_used = set()
-        max_attempts = 20
+        max_attempts = 30
         attempt = 0
 
-        # Fontes disponíveis
+        # Fontes disponíveis - Prioridade para Conhecimentos Gerais
         sources = [self._from_openai, self._from_open_trivia, self._from_local_json]
 
         while len(selected) < count and attempt < max_attempts:
             attempt += 1
-            random.shuffle(sources)
+            # Se já temos matemática, removemos a fonte sintética ou forçamos outras
+            current_sources = sources.copy()
+            random.shuffle(current_sources)
             
-            for source_func in sources:
+            for source_func in current_sources:
                 if len(selected) >= count: break
                 try:
                     candidates = source_func(count * 2)
                     for q in candidates:
                         if len(selected) >= count: break
                         
-                        # Critérios de seleção rigorosos:
-                        # 1. Não pode ter sido vista no histórico (anti-repetição global)
-                        # 2. Não pode ter a mesma categoria no mesmo vídeo (diversidade)
-                        # 3. Não pode ser apenas matemática (limite de 1 por vídeo)
-                        
                         is_math = "matemática" in q.category.lower() or "raciocínio lógico" in q.category.lower()
                         has_math = any("matemática" in s.category.lower() or "raciocínio lógico" in s.category.lower() for s in selected)
                         
+                        # REGRAS RÍGIDAS:
+                        # 1. Anti-repetição global
                         if self.history.seen(q): continue
+                        # 2. Diversidade de categoria no mesmo vídeo
                         if q.category in categories_used: continue
-                        if is_math and has_math: continue # Apenas uma de exatas por vídeo
+                        # 3. Limite de 1 de matemática por vídeo (SÓ SE NECESSÁRIO)
+                        if is_math and has_math: continue 
 
                         selected.append(q)
                         categories_used.add(q.category)
-                        self.history.add_many([q]) # Salva imediatamente no histórico
+                        self.history.add_many([q])
                         logger.info(f"Selecionada ({q.source} | {q.category}): {q.question[:50]}...")
                 except Exception as e:
                     logger.debug(f"Fonte {source_func.__name__} falhou: {e}")
 
-        # Fallback diversificado e Robusto (Evita IndexError)
-        while len(selected) < count:
+        # Fallback Robusto SEM matemática automática (prioriza banco local e OpenAI)
+        while len(selected) < count and attempt < max_attempts + 20:
+            attempt += 1
             q = None
-            # Se ainda não temos matemática, tenta gerar uma
-            if not any("matemática" in s.category.lower() for s in selected):
-                q = self._make_math_question()
             
-            # Se não foi matemática ou se já temos matemática, tenta OpenAI
-            if not q:
-                openai_qs = self._from_openai(1)
-                if openai_qs:
-                    q = openai_qs[0]
+            # Tenta OpenAI primeiro para temas de concurso
+            openai_qs = self._from_openai(1)
+            if openai_qs: q = openai_qs[0]
             
-            # Se OpenAI falhou, tenta Local JSON como última esperança
+            # Se falhou, tenta Local JSON
             if not q:
                 local_qs = self._from_local_json(1)
-                if local_qs:
-                    q = local_qs[0]
+                if local_qs: q = local_qs[0]
             
-            # Se TUDO falhou (raro), gera uma matemática simples para não quebrar o código
+            # Se ainda assim falhou, tenta Open Trivia (Conhecimentos Gerais)
             if not q:
-                q = self._make_math_question()
+                trivia_qs = self._from_open_trivia(1)
+                if trivia_qs: q = trivia_qs[0]
 
-            if not self.history.seen(q):
+            if q and not self.history.seen(q):
                 selected.append(q)
                 self.history.add_many([q])
-            else:
-                # Se a pergunta de fallback já foi vista, tentamos de novo com um limite de segurança
-                attempt += 1
-                if attempt > max_attempts + 10: break 
+
+        # Apenas como ÚLTIMO RECURSO absoluto para não quebrar o vídeo
+        if len(selected) < count:
+            selected.append(self._make_math_question())
 
         return selected
 
