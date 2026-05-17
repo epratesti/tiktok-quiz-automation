@@ -32,21 +32,20 @@ def run_pipeline(videos: int | None = None, upload: bool | None = None) -> list[
     ensure_directories()
     logger = logging.getLogger("pipeline")
     batch_size = videos or settings.video.batch_size
-    questions_per_video = 3  # Ajustado para 3 perguntas por vídeo
+    questions_per_video = 3  # Padrão: 3 perguntas por vídeo
     logger.info("Iniciando pipeline: %s videos com %s perguntas cada", batch_size, questions_per_video)
     
-    total_questions_needed = batch_size * questions_per_video
-    all_questions = QuestionGenerator().generate_batch(total_questions_needed)
-    
+    question_gen = QuestionGenerator()
     voice_generator = VoiceGenerator()
     video_creator = VideoCreator()
     uploader = TikTokUploader()
     results = []
 
     for video_idx in range(batch_size):
-        start_idx = video_idx * questions_per_video
-        end_idx = min(start_idx + questions_per_video, len(all_questions))
-        questions_for_video = all_questions[start_idx:end_idx]
+        logger.info("Gerando perguntas inéditas para o video %s/%s", video_idx + 1, batch_size)
+        # Geramos as perguntas INDIVIDUALMENTE para cada vídeo para garantir que o histórico 
+        # seja consultado e atualizado ANTES de começar o próximo vídeo.
+        questions_for_video = question_gen.generate_batch(questions_per_video)
         
         if not questions_for_video:
             logger.warning("Nao ha perguntas suficientes para o video %s", video_idx + 1)

@@ -117,48 +117,48 @@ class QuestionGenerator:
         self.history = QuestionHistory(settings.paths.history_json)
 
     def generate_batch(self, count: int = 3) -> list[QuizQuestion]:
-        """Gera perguntas inéditas em Português Brasileiro usando múltiplas fontes."""
+        """Gera perguntas inéditas em Português Brasileiro garantindo diversidade de temas."""
         selected: list[QuizQuestion] = []
-        max_attempts = 10
+        categories_used = set()
+        max_attempts = 20
         attempt = 0
 
-        # Fontes disponíveis em ordem de preferência
-        sources = [
-            self._from_openai,
-            self._from_open_trivia,
-            self._from_local_json
-        ]
+        # Fontes disponíveis
+        sources = [self._from_openai, self._from_open_trivia, self._from_local_json]
 
         while len(selected) < count and attempt < max_attempts:
             attempt += 1
-            random.shuffle(sources) # Diversifica a fonte inicial
+            random.shuffle(sources)
             
             for source_func in sources:
-                if len(selected) >= count:
-                    break
-                    
+                if len(selected) >= count: break
                 try:
-                    needed = count - len(selected)
-                    candidates = source_func(needed * 2)
-                    
+                    candidates = source_func(count * 2)
                     for q in candidates:
-                        if len(selected) >= count:
-                            break
+                        if len(selected) >= count: break
                         
-                        # Filtro de segurança para perguntas vazias ou muito curtas
-                        if not q.question or len(q.question) < 10:
-                            continue
+                        # Critérios de seleção rigorosos:
+                        # 1. Não pode ter sido vista no histórico (anti-repetição global)
+                        # 2. Não pode ter a mesma categoria no mesmo vídeo (diversidade)
+                        # 3. Não pode ser apenas matemática (limite de 1 por vídeo)
+                        
+                        is_math = "matemática" in q.category.lower() or "raciocínio lógico" in q.category.lower()
+                        has_math = any("matemática" in s.category.lower() or "raciocínio lógico" in s.category.lower() for s in selected)
+                        
+                        if self.history.seen(q): continue
+                        if q.category in categories_used: continue
+                        if is_math and has_math: continue # Apenas uma de exatas por vídeo
 
-                        if not self.history.seen(q):
-                            selected.append(q)
-                            self.history.add_many([q])
-                            logger.info(f"Pergunta inédita ({q.source}): {q.question[:50]}...")
+                        selected.append(q)
+                        categories_used.add(q.category)
+                        self.history.add_many([q]) # Salva imediatamente no histórico
+                        logger.info(f"Selecionada ({q.source} | {q.category}): {q.question[:50]}...")
                 except Exception as e:
-                    logger.warning(f"Fonte {source_func.__name__} falhou: {e}")
+                    logger.debug(f"Fonte {source_func.__name__} falhou: {e}")
 
-        # Fallback final: Gerador Sintético (Matemática) para nunca retornar vazio
+        # Fallback diversificado
         while len(selected) < count:
-            q = self._make_math_question()
+            q = self._make_math_question() if not any("matemática" in s.category.lower() for s in selected) else self._from_openai(1)[0]
             if not self.history.seen(q):
                 selected.append(q)
                 self.history.add_many([q])
