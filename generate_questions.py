@@ -74,18 +74,59 @@ class QuestionHistory:
         logger.info(f"Histórico carregado: {len(self.signatures)} perguntas registradas.")
 
     def _load(self) -> list[str]:
-        if not self.path.exists():
-            logger.info("Arquivo de histórico não encontrado, iniciando novo.")
-            return []
+        signatures = []
+        # 1. Tenta carregar do histórico principal
+        if self.path.exists():
+            try:
+                content = self.path.read_text(encoding="utf-8").strip()
+                if content:
+                    data = json.loads(content)
+                    signatures = list(data.get("signatures", []))
+            except Exception as e:
+                logger.error(f"Erro ao carregar histórico principal: {e}")
+        
+        # 2. Redundância: Tenta reconstruir a partir do analytics.jsonl
+        # Isso garante que mesmo que o histórico.json falhe no push, o analytics (que é salvo como artefato) ajude.
+        analytics_path = self.path.parent / "analytics.jsonl"
+        if analytics_path.exists():
+            try:
+                with open(analytics_path, "r", encoding="utf-8") as f:
+                    for line in f:
+                        if not line.strip(): continue
+                        record = json.loads(line)
+                        for q_data in record.get("questions", []):
+                            # Recriamos o objeto temporário para gerar a assinatura correta
+                            # Note: O código de assinatura deve ser estável
+                            sig = self._generate_sig_from_data(q_data)
+                            if sig and sig not in signatures:
+                                signatures.append(sig)
+                logger.info(f"Histórico reforçado com analytics.jsonl. Total agora: {len(signatures)}")
+            except Exception as e:
+                logger.error(f"Erro ao ler analytics para redundância: {e}")
+                
+        return signatures
+
+    def _generate_sig_from_data(self, data: dict) -> str:
+        """Recria a assinatura a partir de dados brutos do JSON para redundância."""
         try:
-            content = self.path.read_text(encoding="utf-8").strip()
-            if not content:
-                return []
-            data = json.loads(content)
-            return list(data.get("signatures", []))
-        except Exception as e:
-            logger.error(f"Erro ao carregar histórico: {e}")
-            return []
+            import hashlib
+            import re
+            question_text = data.get("question", "").lower()
+            clean_q = re.sub(r"[^a-z0-9\s]", "", question_text)
+            words = [w for w in clean_q.split() if len(w) > 3]
+            words.sort()
+            if len(words) < 3:
+                options = data.get("options", [])
+                correct_idx = data.get("correct_index", 0)
+                if options:
+                    ans = options[correct_idx].lower()
+                    clean_ans = re.sub(r"[^a-z0-9\s]", "", ans)
+                    words.extend([w for w in clean_ans.split() if len(w) > 2])
+                    words.sort()
+            content_id = "".join(words)
+            return hashlib.sha256(content_id.encode("utf-8")).hexdigest()[:32]
+        except:
+            return ""
 
     def seen(self, question: QuizQuestion) -> bool:
         sig = question.signature()
