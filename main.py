@@ -43,8 +43,9 @@ def run_pipeline(videos: int | None = None, upload: bool | None = None) -> list[
 
     for video_idx in range(batch_size):
         logger.info("Gerando perguntas inéditas para o video %s/%s", video_idx + 1, batch_size)
-        # Geramos as perguntas INDIVIDUALMENTE para cada vídeo para garantir que o histórico 
-        # seja consultado e atualizado ANTES de começar o próximo vídeo.
+        # Recarregamos o histórico a cada vídeo para garantir que duplicatas geradas 
+        # na mesma execução sejam detectadas.
+        question_gen.history._load()
         questions_for_video = question_gen.generate_batch(questions_per_video)
         
         if not questions_for_video:

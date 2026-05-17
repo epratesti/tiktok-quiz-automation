@@ -1,49 +1,94 @@
 {
   "questions": [
     {
-      "category": "Curiosidades",
-      "hook": "Você sabia dessa?",
-      "question": "Qual é o único animal que não consegue pular?",
-      "options": ["Elefante", "Girafa", "Rinoceronte", "Hipopótamo"],
+      "category": "Direito Administrativo",
+      "hook": "Questão de Concurso!",
+      "question": "Qual princípio da administração pública impede o favoritismo e a perseguição por parte do gestor?",
+      "options": ["Legalidade", "Impessoalidade", "Moralidade", "Publicidade"],
+      "correct_index": 1,
+      "explanation": "O princípio da impessoalidade estabelece que a administração deve tratar a todos de forma igual, sem favoritismos.",
+      "difficulty": "dificil"
+    },
+    {
+      "category": "Direito Constitucional",
+      "hook": "Desafio de Concurso!",
+      "question": "Qual o prazo máximo para a duração de uma Medida Provisória, incluindo a prorrogação?",
+      "options": ["60 dias", "90 dias", "120 dias", "180 dias"],
+      "correct_index": 2,
+      "explanation": "Uma MP tem validade de 60 dias, prorrogáveis por mais 60, totalizando 120 dias.",
+      "difficulty": "dificil"
+    },
+    {
+      "category": "Português",
+      "hook": "Gramática para Concursos!",
+      "question": "Na frase 'Assisti ___ filme ontem', qual preposição completa corretamente a regência do verbo assistir (sentido de ver)?",
+      "options": ["o", "ao", "no", "do"],
+      "correct_index": 1,
+      "explanation": "No sentido de ver, o verbo assistir é transitivo indireto e exige a preposição 'a'.",
+      "difficulty": "medio"
+    },
+    {
+      "category": "Informática",
+      "hook": "TI para Concursos!",
+      "question": "Qual protocolo é utilizado para o envio de e-mails de forma segura?",
+      "options": ["HTTP", "FTP", "SMTP", "POP3"],
+      "correct_index": 2,
+      "explanation": "O SMTP (Simple Mail Transfer Protocol) é o protocolo padrão para envio de e-mails.",
+      "difficulty": "medio"
+    },
+    {
+      "category": "História do Brasil",
+      "hook": "História para Concursos!",
+      "question": "Em que ano ocorreu a Proclamação da República no Brasil?",
+      "options": ["1822", "1888", "1889", "1930"],
+      "correct_index": 2,
+      "explanation": "A República foi proclamada em 15 de novembro de 1889 pelo Marechal Deodoro da Fonseca.",
+      "difficulty": "facil"
+    },
+    {
+      "category": "Geografia do Brasil",
+      "hook": "Geografia para Concursos!",
+      "question": "Qual é o maior bioma brasileiro em extensão territorial?",
+      "options": ["Cerrado", "Mata Atlântica", "Amazônia", "Pantanal"],
+      "correct_index": 2,
+      "explanation": "A Amazônia é o maior bioma do Brasil, ocupando quase metade do território nacional.",
+      "difficulty": "facil"
+    },
+    {
+      "category": "Raciocínio Lógico",
+      "hook": "Lógica para Concursos!",
+      "question": "Se todo A é B e algum B é C, pode-se afirmar que todo A é C?",
+      "options": ["Sim", "Não", "Depende de B", "Depende de A"],
+      "correct_index": 1,
+      "explanation": "Não se pode afirmar, pois o fato de alguns B serem C não garante que os B que são A também sejam C.",
+      "difficulty": "dificil"
+    },
+    {
+      "category": "Administração Pública",
+      "hook": "Gestão para Concursos!",
+      "question": "O que significa a sigla LIMPE no Direito Administrativo?",
+      "options": ["Princípios da Administração", "Órgãos do Governo", "Tipos de Licitação", "Cargos Públicos"],
       "correct_index": 0,
-      "explanation": "O elefante é o único mamífero que não consegue pular devido ao seu peso e estrutura óssea.",
+      "explanation": "LIMPE refere-se aos princípios: Legalidade, Impessoalidade, Moralidade, Publicidade e Eficiência.",
       "difficulty": "facil"
     },
     {
-      "category": "Ciência",
-      "hook": "Teste seu conhecimento científico!",
-      "question": "Qual é o planeta mais quente do sistema solar?",
-      "options": ["Mercúrio", "Vênus", "Marte", "Júpiter"],
+      "category": "Direito Penal",
+      "hook": "Penal para Concursos!",
+      "question": "Qual o princípio que estabelece que não há crime sem lei anterior que o defina?",
+      "options": ["Presunção de Inocência", "Legalidade", "Individualização", "Humanidade"],
       "correct_index": 1,
-      "explanation": "Vênus é o planeta mais quente devido à sua atmosfera densa que retém o calor (efeito estufa).",
+      "explanation": "É o princípio da legalidade ou da reserva legal (Art. 5º, XXXIX da CF).",
       "difficulty": "medio"
     },
     {
-      "category": "Geografia",
-      "hook": "Você conhece o mundo?",
-      "question": "Qual é o menor país do mundo?",
-      "options": ["Mônaco", "Malta", "Vaticano", "San Marino"],
+      "category": "Atualidades",
+      "hook": "Atualidades para Concursos!",
+      "question": "Qual país sediará a COP30 em 2025?",
+      "options": ["Estados Unidos", "China", "Brasil", "Egito"],
       "correct_index": 2,
-      "explanation": "O Vaticano é o menor país do mundo, tanto em área quanto em população.",
-      "difficulty": "facil"
-    },
-    {
-      "category": "História",
-      "hook": "Voltando no tempo...",
-      "question": "Quem foi o primeiro presidente do Brasil?",
-      "options": ["Getúlio Vargas", "Deodoro da Fonseca", "Floriano Peixoto", "Prudente de Morais"],
-      "correct_index": 1,
-      "explanation": "O Marechal Deodoro da Fonseca foi o primeiro presidente do Brasil após a Proclamação da República.",
+      "explanation": "O Brasil sediará a COP30 na cidade de Belém, no Pará.",
       "difficulty": "medio"
-    },
-    {
-      "category": "Corpo Humano",
-      "hook": "Você conhece seu próprio corpo?",
-      "question": "Qual é o maior órgão do corpo humano?",
-      "options": ["Fígado", "Cérebro", "Pele", "Intestino"],
-      "correct_index": 2,
-      "explanation": "A pele é o maior órgão do corpo humano, cobrindo toda a sua superfície externa.",
-      "difficulty": "facil"
     }
   ]
 }
