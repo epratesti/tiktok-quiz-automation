@@ -172,24 +172,25 @@ class QuestionGenerator:
         from openai import OpenAI
         client = OpenAI()
         
-        # Lista expandida de tópicos para evitar repetição de temas
+        # Lista focada em Concursos Públicos e Conhecimentos Gerais de alto nível
         topics = [
-            "Direito Administrativo (Licitações, Atos)", 
-            "Língua Portuguesa (Crase, Concordância)", 
-            "Raciocínio Lógico (Silogismos, Probabilidade)", 
-            "História do Brasil (Império, República Velha)", 
-            "Geografia do Brasil (Biomas, Relevo)", 
-            "Conhecimentos Gerais (Ciência, Tecnologia)", 
-            "Atualidades Brasileiras (Economia, Política)",
-            "Culinária Brasileira",
-            "Esportes no Brasil",
-            "Cinema e Cultura Brasileira"
+            "Direito Administrativo (Agentes Públicos, Poderes, Atos Administrativos)",
+            "Direito Constitucional (Direitos Fundamentais, Organização do Estado)",
+            "Língua Portuguesa Avançada (Sintaxe, Regência, Crase, Pontuação)",
+            "Raciocínio Lógico-Matemático (Lógica Proposicional, Conjuntos, Análise Combinatória)",
+            "Matemática para Concursos (Porcentagem, Juros Simples/Compostos, Equações)",
+            "História do Brasil (Brasil Colônia, Império e República)",
+            "Geografia Geral e do Brasil (Geopolítica, Urbanização, Meio Ambiente)",
+            "Conhecimentos Gerais (Ciência Moderna, Grandes Descobertas, Literatura Brasileira)",
+            "Atualidades (Política Internacional, Economia Brasileira, Meio Ambiente)",
+            "Informática para Concursos (Segurança da Informação, Redes, Pacote Office)"
         ]
         topic = random.choice(topics)
         
         prompt = (
-            f"Gere {limit} perguntas de múltipla escolha ÚNICAS e EXCLUSIVAMENTE EM PORTUGUÊS BRASILEIRO sobre {topic}.\n"
-            "Varie os subtemas para não repetir o que é óbvio.\n"
+            f"Gere {limit} perguntas de múltipla escolha de NÍVEL DIFÍCIL (nível concurso público) sobre {topic}.\n"
+            "As perguntas devem ser desafiadoras e adequadas para quem está estudando para provas de alto nível.\n"
+            "Use Português Brasileiro formal.\n"
             "Formato JSON estrito:\n"
             '{"questions":[{"category":"...","hook":"...","question":"...","options":["A","B","C","D"],"correct_index":0,"explanation":"..."}]}'
         )
@@ -295,22 +296,48 @@ class QuestionGenerator:
             return []
 
     def _make_math_question(self) -> QuizQuestion:
-        a, b = random.randint(10, 99), random.randint(2, 9)
-        ops = [("+", a+b), ("-", a-b), ("x", a*b)]
-        op_sym, res = random.choice(ops)
+        """Gera perguntas de matemática de nível médio/concurso."""
+        q_type = random.choice(["porcentagem", "equacao", "regra_de_tres", "aritmetica_avancada"])
         
-        opts = list({res, res+10, res-10, res+5})
-        while len(opts) < 4: opts.append(res + random.randint(1, 30))
+        if q_type == "porcentagem":
+            p = random.choice([5, 10, 15, 20, 25, 30])
+            val = random.randint(1, 20) * 50
+            res = int(val * (p / 100))
+            question = f"Quanto é {p}% de {val}?"
+            explanation = f"{p}% de {val} = ({p}/100) * {val} = {res}"
+        elif q_type == "equacao":
+            x = random.randint(2, 12)
+            a = random.randint(2, 5)
+            b = random.randint(1, 20)
+            c = a * x + b
+            question = f"Se {a}x + {b} = {c}, qual o valor de x?"
+            res = x
+            explanation = f"{a}x = {c} - {b} => {a}x = {c-b} => x = {res}"
+        elif q_type == "regra_de_tres":
+            # Ex: 2 pedreiros fazem em 6 dias. 3 pedreiros fazem em quantos? (Inversamente)
+            n1, d1 = 2, 6
+            n2 = 3
+            res = (n1 * d1) // n2
+            question = f"Se {n1} operários fazem uma obra em {d1} dias, {n2} operários farão em quantos dias?"
+            explanation = f"Grandezas inversamente proporcionais: {n1} * {d1} = {n2} * x => {n1*d1} = {n2}x => x = {res}"
+        else: # Aritmética mais chata
+            a, b, c = random.randint(10, 30), random.randint(5, 15), random.randint(2, 5)
+            res = (a * b) + c
+            question = f"Qual o resultado de ({a} x {b}) + {c}?"
+            explanation = f"{a} x {b} = {a*b}; {a*b} + {c} = {res}"
+
+        opts = list({res, res + random.randint(1, 5), res - random.randint(1, 5), res + 10})
+        while len(opts) < 4: opts.append(res + random.randint(6, 20))
         random.shuffle(opts)
         
         return QuizQuestion(
-            id=f"math_{a}_{op_sym}_{b}_{time.time()}",
-            category="matemática",
-            hook="Desafio rápido",
-            question=f"Quanto é {a} {op_sym} {b}?",
+            id=f"math_adv_{time.time()}",
+            category="Matemática",
+            hook="Desafio de Concurso",
+            question=question,
             options=[str(o) for o in opts],
             correct_index=opts.index(res),
-            explanation=f"{a} {op_sym} {b} = {res}",
+            explanation=explanation,
             source="synthetic"
         )
 
