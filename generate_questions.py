@@ -156,12 +156,36 @@ class QuestionGenerator:
                 except Exception as e:
                     logger.debug(f"Fonte {source_func.__name__} falhou: {e}")
 
-        # Fallback diversificado
+        # Fallback diversificado e Robusto (Evita IndexError)
         while len(selected) < count:
-            q = self._make_math_question() if not any("matemática" in s.category.lower() for s in selected) else self._from_openai(1)[0]
+            q = None
+            # Se ainda não temos matemática, tenta gerar uma
+            if not any("matemática" in s.category.lower() for s in selected):
+                q = self._make_math_question()
+            
+            # Se não foi matemática ou se já temos matemática, tenta OpenAI
+            if not q:
+                openai_qs = self._from_openai(1)
+                if openai_qs:
+                    q = openai_qs[0]
+            
+            # Se OpenAI falhou, tenta Local JSON como última esperança
+            if not q:
+                local_qs = self._from_local_json(1)
+                if local_qs:
+                    q = local_qs[0]
+            
+            # Se TUDO falhou (raro), gera uma matemática simples para não quebrar o código
+            if not q:
+                q = self._make_math_question()
+
             if not self.history.seen(q):
                 selected.append(q)
                 self.history.add_many([q])
+            else:
+                # Se a pergunta de fallback já foi vista, tentamos de novo com um limite de segurança
+                attempt += 1
+                if attempt > max_attempts + 10: break 
 
         return selected
 
