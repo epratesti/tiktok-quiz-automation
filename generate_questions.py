@@ -39,14 +39,20 @@ class QuizQuestion:
         return self.options[self.correct_index]
 
     def signature(self) -> str:
-        """Gera uma assinatura semântica rigorosa para evitar repetições."""
-        # Normalização agressiva: apenas letras e números para ignorar variações de pontuação/espaço
-        normalized = re.sub(r"[^a-z0-9]", "", self.question.lower())
-        # Se a pergunta for muito curta, adiciona as opções na assinatura para diferenciar
-        if len(normalized) < 20:
-            opts = "".join(sorted([re.sub(r"[^a-z0-9]", "", o.lower()) for o in self.options]))
-            normalized += opts
-        return hashlib.sha256(normalized.encode("utf-8")).hexdigest()[:32]
+        """Gera uma assinatura baseada em palavras-chave para detectar e bloquear paráfrases e temas repetidos."""
+        # Normalização: remove pontuação e mantém apenas palavras significativas (>3 letras)
+        clean_q = re.sub(r"[^a-z0-9\s]", "", self.question.lower())
+        words = [w for w in clean_q.split() if len(w) > 3]
+        # Ordenamos as palavras para que a ordem da frase não mude a assinatura (detecta a mesma ideia reescrita)
+        words.sort()
+        # Se a pergunta for muito curta, usamos a resposta correta para ajudar na distinção
+        if len(words) < 3:
+            clean_ans = re.sub(r"[^a-z0-9\s]", "", self.correct_answer.lower())
+            words.extend([w for w in clean_ans.split() if len(w) > 2])
+            words.sort()
+            
+        content_id = "".join(words)
+        return hashlib.sha256(content_id.encode("utf-8")).hexdigest()[:32]
 
 
 HOOKS = [
