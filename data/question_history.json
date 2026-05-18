@@ -56,7 +56,25 @@
     "00851eb3e2a298b2038857914e8bf8c1",
     "724ee0b4d644a4f72d8749c85b44707b",
     "dc9c938aff477634afa43322d2f01d4d",
-    "9d3c8fe750850dc85ac5d65fc17641f3"
+    "9d3c8fe750850dc85ac5d65fc17641f3",
+    "4dc71be2134d9009e27eb6cc71c33eca",
+    "ca1c7057f573760c2b6541e41020642d",
+    "11847a648045ace03f579c3325ea2df8",
+    "4028728e139ecc4644b551b01df12b0f",
+    "9c9eccd4937dcd3cd76260e725aa3640",
+    "5f369148af055a9d7463e8b5e4766c91",
+    "3e090b2a971acea51eab935faca95c2c",
+    "94d8611c411f68e07301eb75bb628c50",
+    "fbe6c8f34651dc0119421b222e41b87c",
+    "8e0c28ea07fbb554121c18be42c002e6",
+    "dddf2de4f95863331ed30b73ce430bbd",
+    "ce8e0db26c718accc830edaf1ab79c08",
+    "73dcf40d7d99e1f25b8cc450940cb408",
+    "30f3e3c2f2f8c0d81958154f42a9b603",
+    "f2ed94811d67e1ee3bf7193b0e0bc5a1",
+    "85f90e54553467da0ecb1ce5e132b147",
+    "2a49ab0ca0f4047bb0fc95a2701e23ce",
+    "fc3ba356ef7eff6ad1527076cd901714"
   ],
   "records": [
     {
@@ -367,6 +385,168 @@
       "correct_answer": "90",
       "source": "emergency",
       "created_at": "2026-05-18T17:07:38.405967+00:00"
+    },
+    {
+      "signature": "4dc71be2134d9009e27eb6cc71c33eca",
+      "question": "Desafio 1779124248893: qual e o resultado de 42 + 60?",
+      "normalized_question": "desafio 1779124248893 qual e o resultado de 42 60",
+      "category": "Raciocinio Logico",
+      "correct_answer": "102",
+      "source": "emergency",
+      "created_at": "2026-05-18T17:10:41.810785+00:00"
+    },
+    {
+      "signature": "ca1c7057f573760c2b6541e41020642d",
+      "question": "Desafio 1779124244591: qual e o resultado de 45 + 12?",
+      "normalized_question": "desafio 1779124244591 qual e o resultado de 45 12",
+      "category": "Raciocinio Logico",
+      "correct_answer": "57",
+      "source": "emergency",
+      "created_at": "2026-05-18T17:10:41.811876+00:00"
+    },
+    {
+      "signature": "11847a648045ace03f579c3325ea2df8",
+      "question": "Desafio 1779124245154: qual e o resultado de 51 + 12?",
+      "normalized_question": "desafio 1779124245154 qual e o resultado de 51 12",
+      "category": "Raciocinio Logico",
+      "correct_answer": "63",
+      "source": "emergency",
+      "created_at": "2026-05-18T17:10:41.812701+00:00"
+    },
+    {
+      "signature": "4028728e139ecc4644b551b01df12b0f",
+      "question": "Desafio 1779124883935: qual e o resultado de 34 + 18?",
+      "normalized_question": "desafio 1779124883935 qual e o resultado de 34 18",
+      "category": "Raciocinio Logico",
+      "correct_answer": "52",
+      "source": "emergency",
+      "created_at": "2026-05-18T17:21:19.527302+00:00"
+    },
+    {
+      "signature": "9c9eccd4937dcd3cd76260e725aa3640",
+      "question": "Desafio 1779124889009: qual e o resultado de 30 + 70?",
+      "normalized_question": "desafio 1779124889009 qual e o resultado de 30 70",
+      "category": "Raciocinio Logico",
+      "correct_answer": "100",
+      "source": "emergency",
+      "created_at": "2026-05-18T17:21:19.528346+00:00"
+    },
+    {
+      "signature": "5f369148af055a9d7463e8b5e4766c91",
+      "question": "Desafio 1779124885984: qual e o resultado de 88 + 50?",
+      "normalized_question": "desafio 1779124885984 qual e o resultado de 88 50",
+      "category": "Raciocinio Logico",
+      "correct_answer": "138",
+      "source": "emergency",
+      "created_at": "2026-05-18T17:21:19.529226+00:00"
+    },
+    {
+      "signature": "3e090b2a971acea51eab935faca95c2c",
+      "question": "Desafio 1779125550270: qual e o resultado de 82 + 53?",
+      "normalized_question": "desafio 1779125550270 qual e o resultado de 82 53",
+      "category": "Raciocinio Logico",
+      "correct_answer": "135",
+      "source": "emergency",
+      "created_at": "2026-05-18T17:32:25.016284+00:00"
+    },
+    {
+      "signature": "94d8611c411f68e07301eb75bb628c50",
+      "question": "Desafio 1779125549784: qual e o resultado de 59 + 40?",
+      "normalized_question": "desafio 1779125549784 qual e o resultado de 59 40",
+      "category": "Raciocinio Logico",
+      "correct_answer": "99",
+      "source": "emergency",
+      "created_at": "2026-05-18T17:32:25.017342+00:00"
+    },
+    {
+      "signature": "fbe6c8f34651dc0119421b222e41b87c",
+      "question": "Desafio 1779125552827: qual e o resultado de 69 + 28?",
+      "normalized_question": "desafio 1779125552827 qual e o resultado de 69 28",
+      "category": "Raciocinio Logico",
+      "correct_answer": "97",
+      "source": "emergency",
+      "created_at": "2026-05-18T17:32:25.018230+00:00"
+    },
+    {
+      "signature": "8e0c28ea07fbb554121c18be42c002e6",
+      "question": "Desafio 1779126274509: qual e o resultado de 57 + 14?",
+      "normalized_question": "desafio 1779126274509 qual e o resultado de 57 14",
+      "category": "Raciocinio Logico",
+      "correct_answer": "71",
+      "source": "emergency",
+      "created_at": "2026-05-18T17:44:29.318308+00:00"
+    },
+    {
+      "signature": "dddf2de4f95863331ed30b73ce430bbd",
+      "question": "Desafio 1779126279012: qual e o resultado de 17 + 30?",
+      "normalized_question": "desafio 1779126279012 qual e o resultado de 17 30",
+      "category": "Raciocinio Logico",
+      "correct_answer": "47",
+      "source": "emergency",
+      "created_at": "2026-05-18T17:44:29.319363+00:00"
+    },
+    {
+      "signature": "ce8e0db26c718accc830edaf1ab79c08",
+      "question": "Desafio 1779126278026: qual e o resultado de 34 + 69?",
+      "normalized_question": "desafio 1779126278026 qual e o resultado de 34 69",
+      "category": "Raciocinio Logico",
+      "correct_answer": "103",
+      "source": "emergency",
+      "created_at": "2026-05-18T17:44:29.320323+00:00"
+    },
+    {
+      "signature": "73dcf40d7d99e1f25b8cc450940cb408",
+      "question": "Desafio 1779126946955: qual e o resultado de 80 + 49?",
+      "normalized_question": "desafio 1779126946955 qual e o resultado de 80 49",
+      "category": "Raciocinio Logico",
+      "correct_answer": "129",
+      "source": "emergency",
+      "created_at": "2026-05-18T17:55:40.130503+00:00"
+    },
+    {
+      "signature": "30f3e3c2f2f8c0d81958154f42a9b603",
+      "question": "Desafio 1779126944872: qual e o resultado de 38 + 18?",
+      "normalized_question": "desafio 1779126944872 qual e o resultado de 38 18",
+      "category": "Raciocinio Logico",
+      "correct_answer": "56",
+      "source": "emergency",
+      "created_at": "2026-05-18T17:55:40.131572+00:00"
+    },
+    {
+      "signature": "f2ed94811d67e1ee3bf7193b0e0bc5a1",
+      "question": "Desafio 1779126945359: qual e o resultado de 79 + 14?",
+      "normalized_question": "desafio 1779126945359 qual e o resultado de 79 14",
+      "category": "Raciocinio Logico",
+      "correct_answer": "93",
+      "source": "emergency",
+      "created_at": "2026-05-18T17:55:40.132545+00:00"
+    },
+    {
+      "signature": "85f90e54553467da0ecb1ce5e132b147",
+      "question": "Desafio 1779127516022: qual e o resultado de 50 + 31?",
+      "normalized_question": "desafio 1779127516022 qual e o resultado de 50 31",
+      "category": "Raciocinio Logico",
+      "correct_answer": "81",
+      "source": "emergency",
+      "created_at": "2026-05-18T18:05:14.501963+00:00"
+    },
+    {
+      "signature": "2a49ab0ca0f4047bb0fc95a2701e23ce",
+      "question": "Desafio 1779127522911: qual e o resultado de 49 + 70?",
+      "normalized_question": "desafio 1779127522911 qual e o resultado de 49 70",
+      "category": "Raciocinio Logico",
+      "correct_answer": "119",
+      "source": "emergency",
+      "created_at": "2026-05-18T18:05:14.503107+00:00"
+    },
+    {
+      "signature": "fc3ba356ef7eff6ad1527076cd901714",
+      "question": "Desafio 1779127520860: qual e o resultado de 68 + 19?",
+      "normalized_question": "desafio 1779127520860 qual e o resultado de 68 19",
+      "category": "Raciocinio Logico",
+      "correct_answer": "87",
+      "source": "emergency",
+      "created_at": "2026-05-18T18:05:14.504085+00:00"
     }
   ]
 }
