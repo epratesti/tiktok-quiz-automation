@@ -160,7 +160,14 @@ class VideoCreator:
             # Para temas de concurso da IA, usa a categoria real ou Conhecimentos Gerais
             if len(display_category) > 20: display_category = "CONHECIMENTOS GERAIS"
             
-        title_img = text_panel(f"{question.hook}\nQUIZ {display_category}", width - 100, 72, theme_name)
+        # Título focado em Concursos e Conhecimentos Gerais, sem códigos numéricos
+        clean_hook = re.sub(r"Desafio\s*\d+", "DESAFIO", question.hook, flags=re.IGNORECASE)
+        if "MATEMÁTICA" in display_category or "RACIOCÍNIO" in display_category:
+            title_text = f"{clean_hook}\nQUIZ CONCURSOS"
+        else:
+            title_text = f"{clean_hook}\n{display_category}"
+            
+        title_img = text_panel(title_text, width - 100, 72, theme_name)
         clips.append(self._image_clip(title_img, 0, 4, ("center", 240)))
 
         # Pergunta (4-23s)
