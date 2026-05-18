@@ -35,6 +35,338 @@
     "fbea281c9469d4f2384d07c7468158d7",
     "b2a74fd7421a2f4a4cca836b9593cfc4",
     "efb6940f31e4eb909f0ecacfd6f4278f",
-    "ace7b35913daec0a77463708db533958"
+    "ace7b35913daec0a77463708db533958",
+    "f129373edf9d3a08b4808089c5dd466f",
+    "bf9290891444682de406938acfed095b",
+    "78cc7f616c77b5cd194e76ffb12ff815",
+    "25a0be93c11df8920a483b493be6a78d",
+    "01a1532ce8da59236f2ee94abc8625b6",
+    "a4277530170ca07c8e3122188b622e79",
+    "429ca9a03726358f5bf61af0a07e5dcc",
+    "d095ef4506553ad8841682f02f7fa8c9",
+    "6940807b257febfca3de4726ecfc688c",
+    "6536875b20297ba69a2ff4e2efea233d",
+    "003fa7e8c3d94ac6814274cd3559547a",
+    "6adcc016448d707c1d16827459aee1f5",
+    "e3b0c44298fc1c149afbf4c8996fb924",
+    "7ada3b67c858b4e0cbf5ac5a388f2820",
+    "40510175845988f13f6162ed8526f0b0",
+    "fe4ef4f8181c6180cc21dde258e71cac",
+    "5312db493e6b49d2c8a2600130af62b9",
+    "00851eb3e2a298b2038857914e8bf8c1",
+    "724ee0b4d644a4f72d8749c85b44707b",
+    "dc9c938aff477634afa43322d2f01d4d",
+    "9d3c8fe750850dc85ac5d65fc17641f3"
+  ],
+  "records": [
+    {
+      "signature": "6c6bc632ae3ff1d330f3dda2d0fd41b3",
+      "question": "",
+      "normalized_question": ""
+    },
+    {
+      "signature": "8f99dd242fd301354cf7ead8a9505fa1",
+      "question": "",
+      "normalized_question": ""
+    },
+    {
+      "signature": "bbe48df13ebf7e972cdebfb4a522da21",
+      "question": "",
+      "normalized_question": ""
+    },
+    {
+      "signature": "b9b5ffdb948e295d44f46b1d4b977ced",
+      "question": "",
+      "normalized_question": ""
+    },
+    {
+      "signature": "9d2f81407115668ebf21e2d76583646d",
+      "question": "",
+      "normalized_question": ""
+    },
+    {
+      "signature": "4e46dfd5a80e3c6e45040e8b088f8ea6",
+      "question": "",
+      "normalized_question": ""
+    },
+    {
+      "signature": "0af662fbbc8d3f4a2c006432a6021d1e",
+      "question": "",
+      "normalized_question": ""
+    },
+    {
+      "signature": "84096c95e559a3bfbc96cb82bcd40287",
+      "question": "",
+      "normalized_question": ""
+    },
+    {
+      "signature": "cf8dbe2990046fedaed86c2f809c4fe3",
+      "question": "",
+      "normalized_question": ""
+    },
+    {
+      "signature": "ec1b7118eede4a80c5799843f21be30f",
+      "question": "",
+      "normalized_question": ""
+    },
+    {
+      "signature": "e91b6c532b314c08f88f0016579e6f40",
+      "question": "",
+      "normalized_question": ""
+    },
+    {
+      "signature": "0e123b4230d9a2881ba448edd8372f52",
+      "question": "",
+      "normalized_question": ""
+    },
+    {
+      "signature": "bf1303bcb0d68abfa52efbed34e5e080",
+      "question": "",
+      "normalized_question": ""
+    },
+    {
+      "signature": "779c96720ecfacdbaedaad32e13fc3e2",
+      "question": "",
+      "normalized_question": ""
+    },
+    {
+      "signature": "fc672d5694bd54f1c851ae5bc56a8e50",
+      "question": "",
+      "normalized_question": ""
+    },
+    {
+      "signature": "4a017241a0de62fee3250051beecda5a",
+      "question": "",
+      "normalized_question": ""
+    },
+    {
+      "signature": "08c04d4dc411b9c1548dbf2567196274",
+      "question": "",
+      "normalized_question": ""
+    },
+    {
+      "signature": "8c3fd8fe37b53b63631933333138ef2f",
+      "question": "",
+      "normalized_question": ""
+    },
+    {
+      "signature": "e1f148e6e60ce77dfd9d9b007664c7b8",
+      "question": "",
+      "normalized_question": ""
+    },
+    {
+      "signature": "35747d44dabd6f45df64168d7410a94f",
+      "question": "",
+      "normalized_question": ""
+    },
+    {
+      "signature": "50c716f59463e5d85454f556f040ea88",
+      "question": "",
+      "normalized_question": ""
+    },
+    {
+      "signature": "a6cb24686ceccd00180531ba6b62d602",
+      "question": "",
+      "normalized_question": ""
+    },
+    {
+      "signature": "e4b6ae06c266b177fe0046965cf231d7",
+      "question": "",
+      "normalized_question": ""
+    },
+    {
+      "signature": "24e5e4d1f1926a1816e4f187c118ff21",
+      "question": "",
+      "normalized_question": ""
+    },
+    {
+      "signature": "868de8b0b11099329a642e415ebc6107",
+      "question": "",
+      "normalized_question": ""
+    },
+    {
+      "signature": "70beb19253d9d75b9afc387b966d3a53",
+      "question": "",
+      "normalized_question": ""
+    },
+    {
+      "signature": "04f746620bb27358d36823ca6de59b73",
+      "question": "",
+      "normalized_question": ""
+    },
+    {
+      "signature": "ffda71fa4ec3d1c2687f455fb9079ab2",
+      "question": "",
+      "normalized_question": ""
+    },
+    {
+      "signature": "0416599218a193f4c8d01ad194541bf2",
+      "question": "",
+      "normalized_question": ""
+    },
+    {
+      "signature": "7bc1cd3501b338b9383a1624c041e40f",
+      "question": "",
+      "normalized_question": ""
+    },
+    {
+      "signature": "c0ab35aebf0e75ee8353b55b2a7376d6",
+      "question": "",
+      "normalized_question": ""
+    },
+    {
+      "signature": "6edae843c4994b95ed23e5666d7658fe",
+      "question": "",
+      "normalized_question": ""
+    },
+    {
+      "signature": "fbea281c9469d4f2384d07c7468158d7",
+      "question": "",
+      "normalized_question": ""
+    },
+    {
+      "signature": "b2a74fd7421a2f4a4cca836b9593cfc4",
+      "question": "",
+      "normalized_question": ""
+    },
+    {
+      "signature": "efb6940f31e4eb909f0ecacfd6f4278f",
+      "question": "",
+      "normalized_question": ""
+    },
+    {
+      "signature": "ace7b35913daec0a77463708db533958",
+      "question": "",
+      "normalized_question": ""
+    },
+    {
+      "signature": "f129373edf9d3a08b4808089c5dd466f",
+      "question": "",
+      "normalized_question": ""
+    },
+    {
+      "signature": "bf9290891444682de406938acfed095b",
+      "question": "",
+      "normalized_question": ""
+    },
+    {
+      "signature": "78cc7f616c77b5cd194e76ffb12ff815",
+      "question": "",
+      "normalized_question": ""
+    },
+    {
+      "signature": "25a0be93c11df8920a483b493be6a78d",
+      "question": "",
+      "normalized_question": ""
+    },
+    {
+      "signature": "01a1532ce8da59236f2ee94abc8625b6",
+      "question": "",
+      "normalized_question": ""
+    },
+    {
+      "signature": "a4277530170ca07c8e3122188b622e79",
+      "question": "",
+      "normalized_question": ""
+    },
+    {
+      "signature": "429ca9a03726358f5bf61af0a07e5dcc",
+      "question": "",
+      "normalized_question": ""
+    },
+    {
+      "signature": "d095ef4506553ad8841682f02f7fa8c9",
+      "question": "",
+      "normalized_question": ""
+    },
+    {
+      "signature": "6940807b257febfca3de4726ecfc688c",
+      "question": "",
+      "normalized_question": ""
+    },
+    {
+      "signature": "6536875b20297ba69a2ff4e2efea233d",
+      "question": "",
+      "normalized_question": ""
+    },
+    {
+      "signature": "003fa7e8c3d94ac6814274cd3559547a",
+      "question": "",
+      "normalized_question": ""
+    },
+    {
+      "signature": "6adcc016448d707c1d16827459aee1f5",
+      "question": "",
+      "normalized_question": ""
+    },
+    {
+      "signature": "e3b0c44298fc1c149afbf4c8996fb924",
+      "question": "",
+      "normalized_question": ""
+    },
+    {
+      "signature": "7ada3b67c858b4e0cbf5ac5a388f2820",
+      "question": "",
+      "normalized_question": ""
+    },
+    {
+      "signature": "40510175845988f13f6162ed8526f0b0",
+      "question": "",
+      "normalized_question": ""
+    },
+    {
+      "signature": "fe4ef4f8181c6180cc21dde258e71cac",
+      "question": "Desafio 1779124032949: qual e o resultado de 45 + 55?",
+      "normalized_question": "desafio 1779124032949 qual e o resultado de 45 55",
+      "category": "Raciocinio Logico",
+      "correct_answer": "100",
+      "source": "emergency",
+      "created_at": "2026-05-18T17:07:08.679454+00:00"
+    },
+    {
+      "signature": "5312db493e6b49d2c8a2600130af62b9",
+      "question": "Desafio 1779124036917: qual e o resultado de 50 + 62?",
+      "normalized_question": "desafio 1779124036917 qual e o resultado de 50 62",
+      "category": "Raciocinio Logico",
+      "correct_answer": "112",
+      "source": "emergency",
+      "created_at": "2026-05-18T17:07:08.680562+00:00"
+    },
+    {
+      "signature": "00851eb3e2a298b2038857914e8bf8c1",
+      "question": "Desafio 1779124038161: qual e o resultado de 87 + 50?",
+      "normalized_question": "desafio 1779124038161 qual e o resultado de 87 50",
+      "category": "Raciocinio Logico",
+      "correct_answer": "137",
+      "source": "emergency",
+      "created_at": "2026-05-18T17:07:08.681652+00:00"
+    },
+    {
+      "signature": "724ee0b4d644a4f72d8749c85b44707b",
+      "question": "Desafio 1779124062867: qual e o resultado de 50 + 31?",
+      "normalized_question": "desafio 1779124062867 qual e o resultado de 50 31",
+      "category": "Raciocinio Logico",
+      "correct_answer": "81",
+      "source": "emergency",
+      "created_at": "2026-05-18T17:07:38.403960+00:00"
+    },
+    {
+      "signature": "dc9c938aff477634afa43322d2f01d4d",
+      "question": "Desafio 1779124063061: qual e o resultado de 77 + 77?",
+      "normalized_question": "desafio 1779124063061 qual e o resultado de 77 77",
+      "category": "Raciocinio Logico",
+      "correct_answer": "154",
+      "source": "emergency",
+      "created_at": "2026-05-18T17:07:38.405967+00:00"
+    },
+    {
+      "signature": "9d3c8fe750850dc85ac5d65fc17641f3",
+      "question": "Desafio 1779124068019: qual e o resultado de 77 + 13?",
+      "normalized_question": "desafio 1779124068019 qual e o resultado de 77 13",
+      "category": "Raciocinio Logico",
+      "correct_answer": "90",
+      "source": "emergency",
+      "created_at": "2026-05-18T17:07:38.405967+00:00"
+    }
   ]
 }

@@ -19,14 +19,6 @@ jobs:
         with:
           fetch-depth: 0  # Baixa todo o histórico para comparar melhor
       
-      - name: Restore History Cache
-        uses: actions/cache@v4
-        with:
-          path: data/
-          key: quiz-history-${{ github.run_id }}
-          restore-keys: |
-            quiz-history-
-
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
@@ -41,17 +33,24 @@ jobs:
       - name: Generate 6 videos
         run: python main.py --videos 6 --no-upload
 
-      - name: Save History to Cache
-        uses: actions/cache/save@v4
-        with:
-          path: data/
-          key: quiz-history-${{ github.run_id }}
-
       - name: Persist to Repo (Backup)
         if: always()
         run: |
           git config --global user.name "GitHub Action"
           git config --global user.email "action@github.com"
-          git add -f data/
+          git pull --rebase origin main || true
+          git add -f data/question_history.json
           git commit -m "Update history [skip ci]" || echo "No changes"
           git push origin main || echo "Push failed, but cache is saved"
+
+      - name: Upload generated artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: tiktok-quiz-artifacts
+          path: |
+            output/
+            logs/
+            data/analytics.jsonl
+            data/question_history.json
+          if-no-files-found: ignore

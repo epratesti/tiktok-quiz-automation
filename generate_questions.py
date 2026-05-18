@@ -8,7 +8,9 @@ import os
 import random
 import re
 import time
+import unicodedata
 from dataclasses import asdict, dataclass
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -20,6 +22,23 @@ except ImportError:
 from config import CONCURSO_THEME_PROMPT, settings
 
 logger = logging.getLogger(__name__)
+
+
+def normalize_text(text: str) -> str:
+    text = unicodedata.normalize("NFKD", text.lower())
+    text = "".join(char for char in text if not unicodedata.combining(char))
+    text = re.sub(r"[^a-z0-9\s]", " ", text)
+    return re.sub(r"\s+", " ", text).strip()
+
+
+def keyword_tokens(text: str) -> set[str]:
+    stopwords = {
+        "qual", "quais", "quanto", "quantos", "quando", "onde", "como", "para",
+        "pela", "pelo", "pelos", "pelas", "sobre", "entre", "uma", "umas",
+        "uns", "que", "com", "dos", "das", "por", "mais", "menos", "esta",
+        "este", "essa", "esse", "isso", "nas", "nos", "aos", "acerca",
+    }
+    return {word for word in normalize_text(text).split() if len(word) > 3 and word not in stopwords}
 
 
 @dataclass
@@ -41,17 +60,13 @@ class QuizQuestion:
     def signature(self) -> str:
         """Gera uma assinatura baseada em palavras-chave para detectar e bloquear paráfrases e temas repetidos."""
         # Normalização: remove pontuação e mantém apenas palavras significativas (>3 letras)
-        clean_q = re.sub(r"[^a-z0-9\s]", "", self.question.lower())
-        words = [w for w in clean_q.split() if len(w) > 3]
+        words = sorted(keyword_tokens(self.question))
         # Ordenamos as palavras para que a ordem da frase não mude a assinatura (detecta a mesma ideia reescrita)
-        words.sort()
         # Se a pergunta for muito curta, usamos a resposta correta para ajudar na distinção
         if len(words) < 3:
-            clean_ans = re.sub(r"[^a-z0-9\s]", "", self.correct_answer.lower())
-            words.extend([w for w in clean_ans.split() if len(w) > 2])
-            words.sort()
+            words.extend(sorted(keyword_tokens(self.correct_answer)))
             
-        content_id = "".join(words)
+        content_id = "|".join(words)
         return hashlib.sha256(content_id.encode("utf-8")).hexdigest()[:32]
 
 
@@ -70,11 +85,22 @@ class QuestionHistory:
         self.path = path
         self.limit = limit
         self.path.parent.mkdir(parents=True, exist_ok=True)
-        self.signatures = self._load()
+        self.records: list[dict[str, str]] = []
+        self.signatures: list[str] = []
+        self.reload()
         logger.info(f"Histórico carregado: {len(self.signatures)} perguntas registradas.")
 
-    def _load(self) -> list[str]:
+    def reload(self) -> None:
+        self.records = self._load_records()
+        self.signatures = []
+        for record in self.records:
+            signature = record.get("signature", "")
+            if signature and signature not in self.signatures:
+                self.signatures.append(signature)
+
+    def _load_records(self) -> list[dict[str, str]]:
         signatures = []
+        records: list[dict[str, str]] = []
         # 1. Tenta carregar do histórico principal
         if self.path.exists():
             try:
@@ -82,6 +108,9 @@ class QuestionHistory:
                 if content:
                     data = json.loads(content)
                     signatures = list(data.get("signatures", []))
+                    raw_records = data.get("records", [])
+                    if isinstance(raw_records, list):
+                        records = [record for record in raw_records if isinstance(record, dict)]
             except Exception as e:
                 logger.error(f"Erro ao carregar histórico principal: {e}")
         
@@ -104,26 +133,23 @@ class QuestionHistory:
             except Exception as e:
                 logger.error(f"Erro ao ler analytics para redundância: {e}")
                 
-        return signatures
+        existing = {record.get("signature") for record in records}
+        for signature in signatures:
+            if signature and signature not in existing:
+                records.append({"signature": signature, "question": "", "normalized_question": ""})
+                existing.add(signature)
+        return records[-self.limit :]
 
     def _generate_sig_from_data(self, data: dict) -> str:
         """Recria a assinatura a partir de dados brutos do JSON para redundância."""
         try:
-            import hashlib
-            import re
-            question_text = data.get("question", "").lower()
-            clean_q = re.sub(r"[^a-z0-9\s]", "", question_text)
-            words = [w for w in clean_q.split() if len(w) > 3]
-            words.sort()
+            words = sorted(keyword_tokens(data.get("question", "")))
             if len(words) < 3:
                 options = data.get("options", [])
                 correct_idx = data.get("correct_index", 0)
                 if options:
-                    ans = options[correct_idx].lower()
-                    clean_ans = re.sub(r"[^a-z0-9\s]", "", ans)
-                    words.extend([w for w in clean_ans.split() if len(w) > 2])
-                    words.sort()
-            content_id = "".join(words)
+                    words.extend(sorted(keyword_tokens(options[correct_idx])))
+            content_id = "|".join(words)
             return hashlib.sha256(content_id.encode("utf-8")).hexdigest()[:32]
         except:
             return ""
@@ -131,6 +157,17 @@ class QuestionHistory:
     def seen(self, question: QuizQuestion) -> bool:
         sig = question.signature()
         is_seen = sig in self.signatures
+        if not is_seen:
+            incoming_tokens = keyword_tokens(question.question)
+            for record in self.records:
+                previous = record.get("question", "") or record.get("normalized_question", "")
+                previous_tokens = keyword_tokens(previous)
+                if not incoming_tokens or not previous_tokens:
+                    continue
+                similarity = len(incoming_tokens & previous_tokens) / max(len(incoming_tokens | previous_tokens), 1)
+                if similarity >= 0.82:
+                    is_seen = True
+                    break
         if is_seen:
             logger.info(f"Pergunta repetida detectada: {question.question[:50]}...")
         return is_seen
@@ -141,6 +178,17 @@ class QuestionHistory:
             sig = question.signature()
             if sig not in self.signatures:
                 self.signatures.append(sig)
+                self.records.append(
+                    {
+                        "signature": sig,
+                        "question": question.question,
+                        "normalized_question": normalize_text(question.question),
+                        "category": question.category,
+                        "correct_answer": question.correct_answer,
+                        "source": question.source,
+                        "created_at": datetime.now(timezone.utc).isoformat(),
+                    }
+                )
                 changed = True
         
         if not changed:
@@ -148,11 +196,15 @@ class QuestionHistory:
 
         # Mantém o histórico dentro do limite
         self.signatures = self.signatures[-self.limit :]
+        self.records = self.records[-self.limit :]
         
         # Salvamento atômico para evitar corrupção de arquivo
         temp_path = self.path.with_suffix(".tmp")
         try:
-            temp_path.write_text(json.dumps({"signatures": self.signatures}, indent=2), encoding="utf-8")
+            temp_path.write_text(
+                json.dumps({"signatures": self.signatures, "records": self.records}, indent=2, ensure_ascii=False),
+                encoding="utf-8",
+            )
             temp_path.replace(self.path)
             logger.info(f"Histórico atualizado com sucesso. Total: {len(self.signatures)}")
         except Exception as e:
@@ -228,8 +280,19 @@ class QuestionGenerator:
                 self.history.add_many([q])
 
         # Apenas como ÚLTIMO RECURSO absoluto para não quebrar o vídeo
-        if len(selected) < count:
-            selected.append(self._make_math_question())
+        fallback_attempts = 0
+        while len(selected) < count and fallback_attempts < 100:
+            fallback_attempts += 1
+            fallback = self._make_math_question()
+            if self.history.seen(fallback):
+                continue
+            selected.append(fallback)
+            self.history.add_many([fallback])
+
+        while len(selected) < count:
+            fallback = self._make_emergency_question()
+            selected.append(fallback)
+            self.history.add_many([fallback])
 
         return selected
 
@@ -414,6 +477,27 @@ class QuestionGenerator:
             correct_index=opts.index(res),
             explanation=explanation,
             source="synthetic"
+        )
+
+    def _make_emergency_question(self) -> QuizQuestion:
+        """Fallback final, variado por timestamp, para nunca reutilizar a mesma pergunta."""
+        seed = int(time.time() * 1000) + random.randint(1000, 9999)
+        a = random.randint(12, 89)
+        b = random.randint(11, 77)
+        res = a + b
+        opts = list({res, res + random.randint(2, 9), res - random.randint(2, 9), res + random.randint(10, 18)})
+        while len(opts) < 4:
+            opts.append(res + random.randint(19, 35))
+        random.shuffle(opts)
+        return QuizQuestion(
+            id=f"emergency_{seed}",
+            category="Raciocinio Logico",
+            hook="Questao relampago",
+            question=f"Desafio {seed}: qual e o resultado de {a} + {b}?",
+            options=[str(o) for o in opts],
+            correct_index=opts.index(res),
+            explanation=f"{a} + {b} = {res}.",
+            source="emergency",
         )
 
     def _normalize(self, item: dict, source: str) -> QuizQuestion:
