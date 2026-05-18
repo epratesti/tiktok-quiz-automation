@@ -11,8 +11,22 @@ jobs:
     env:
       DRY_RUN: "true"
       VIDEOS_PER_RUN: "6"
+      VOICE_PROVIDER: ${{ secrets.VOICE_PROVIDER || 'edge' }}
+      EDGE_TTS_VOICE: ${{ secrets.EDGE_TTS_VOICE || 'pt-BR-ThalitaMultilingualNeural' }}
+      EDGE_TTS_RATE: ${{ secrets.EDGE_TTS_RATE || '+5%' }}
+      EDGE_TTS_PITCH: ${{ secrets.EDGE_TTS_PITCH || '+0Hz' }}
+      EDGE_TTS_VOLUME: ${{ secrets.EDGE_TTS_VOLUME || '+0%' }}
+      ELEVENLABS_API_KEY: ${{ secrets.ELEVENLABS_API_KEY }}
+      ELEVENLABS_VOICE_ID: ${{ secrets.ELEVENLABS_VOICE_ID }}
+      ELEVENLABS_MODEL: ${{ secrets.ELEVENLABS_MODEL || 'eleven_multilingual_v2' }}
+      ELEVENLABS_STABILITY: ${{ secrets.ELEVENLABS_STABILITY || '0.38' }}
+      ELEVENLABS_SIMILARITY: ${{ secrets.ELEVENLABS_SIMILARITY || '0.82' }}
+      ELEVENLABS_STYLE: ${{ secrets.ELEVENLABS_STYLE || '0.42' }}
+      ELEVENLABS_SPEAKER_BOOST: ${{ secrets.ELEVENLABS_SPEAKER_BOOST || 'true' }}
       OPENAI_ENABLED: "true"
       OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      OPENAI_MODEL: ${{ secrets.OPENAI_MODEL || 'gpt-4o-mini' }}
+      OPENTRIVIA_ENABLED: "false"
     steps:
       - name: Checkout
         uses: actions/checkout@v4

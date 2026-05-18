@@ -350,6 +350,8 @@ class QuestionGenerator:
 
     def _from_open_trivia(self, limit: int) -> list[QuizQuestion]:
         """Busca perguntas no Open Trivia DB filtrando por temas de Conhecimentos Gerais (História, Geografia, Ciência)."""
+        if not settings.ai.opentrivia_enabled:
+            return []
         if not requests:
             return []
             
