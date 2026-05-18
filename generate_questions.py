@@ -260,12 +260,12 @@ class QuestionGenerator:
         
         prompt = (
             f"Gere {limit} perguntas de múltipla escolha de NÍVEL CONCURSO PÚBLICO sobre {topic}.\n"
-            "FOCO: Questões que poderiam estar em provas da FCC, FGV ou CESPE.\n"
+            "FOCO: Questões desafiadoras das bancas FCC, FGV ou CESPE.\n"
             "REQUISITOS:\n"
-            "1. Nível de dificuldade: Médio para Difícil.\n"
-            "2. Linguagem: Técnica e formal.\n"
-            "3. Explicação: Deve ser didática, explicando o porquê da resposta correta.\n"
-            "4. Diversidade: Não repita conceitos básicos.\n"
+            "1. Nível de dificuldade: DIFÍCIL (Nível Superior).\n"
+            "2. Linguagem: Técnica, formal e precisa.\n"
+            "3. Explicação: Didática e fundamentada.\n"
+            "4. Inovação: Evite temas manjados; busque detalhes importantes do edital.\n"
             "Formato JSON estrito:\n"
             '{"questions":[{"category":"...","hook":"...","question":"...","options":["A","B","C","D"],"correct_index":0,"explanation":"..."}]}'
         )

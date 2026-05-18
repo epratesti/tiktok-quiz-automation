@@ -19,57 +19,30 @@
       "difficulty": "dificil"
     },
     {
-      "category": "Português",
-      "hook": "Gramática para Concursos!",
-      "question": "Na frase 'Assisti ___ filme ontem', qual preposição completa corretamente a regência do verbo assistir (sentido de ver)?",
-      "options": ["o", "ao", "no", "do"],
-      "correct_index": 1,
-      "explanation": "No sentido de ver, o verbo assistir é transitivo indireto e exige a preposição 'a'.",
+      "category": "Conhecimentos Bancários",
+      "hook": "Desafio BB!",
+      "question": "A Comissão de Valores Mobiliários (CVM) é um órgão que regula e fiscaliza o mercado de capitais no Brasil, sendo vinculada ao:",
+      "options": ["Banco Central", "Banco do Brasil", "Ministério da Fazenda", "Poder Legislativo"],
+      "correct_index": 2,
+      "explanation": "A CVM é uma autarquia em regime especial, vinculada ao Ministério da Fazenda.",
       "difficulty": "medio"
     },
     {
-      "category": "Informática",
-      "hook": "TI para Concursos!",
-      "question": "Qual protocolo é utilizado para o envio de e-mails de forma segura?",
-      "options": ["HTTP", "FTP", "SMTP", "POP3"],
+      "category": "Atualidades 2026",
+      "hook": "Atualidades Concurso!",
+      "question": "Em janeiro de 2026, qual país realizou o primeiro pouso lunar tripulado em mais de 50 anos?",
+      "options": ["China", "Rússia", "Estados Unidos", "Índia"],
       "correct_index": 2,
-      "explanation": "O SMTP (Simple Mail Transfer Protocol) é o protocolo padrão para envio de e-mails.",
+      "explanation": "Os Estados Unidos, através da missão Artemis, planejaram o retorno tripulado à Lua para este período.",
       "difficulty": "medio"
     },
     {
-      "category": "História do Brasil",
-      "hook": "História para Concursos!",
-      "question": "Em que ano ocorreu a Proclamação da República no Brasil?",
-      "options": ["1822", "1888", "1889", "1930"],
-      "correct_index": 2,
-      "explanation": "A República foi proclamada em 15 de novembro de 1889 pelo Marechal Deodoro da Fonseca.",
-      "difficulty": "facil"
-    },
-    {
-      "category": "Geografia do Brasil",
-      "hook": "Geografia para Concursos!",
-      "question": "Qual é o maior bioma brasileiro em extensão territorial?",
-      "options": ["Cerrado", "Mata Atlântica", "Amazônia", "Pantanal"],
-      "correct_index": 2,
-      "explanation": "A Amazônia é o maior bioma do Brasil, ocupando quase metade do território nacional.",
-      "difficulty": "facil"
-    },
-    {
-      "category": "Raciocínio Lógico",
-      "hook": "Lógica para Concursos!",
-      "question": "Se todo A é B e algum B é C, pode-se afirmar que todo A é C?",
-      "options": ["Sim", "Não", "Depende de B", "Depende de A"],
+      "category": "Língua Portuguesa",
+      "hook": "Português Concurso!",
+      "question": "Qual destas palavras apresenta um dígrafo (duas letras representando um único som)?",
+      "options": ["Escola", "Pássaro", "Criança", "Brinquedo"],
       "correct_index": 1,
-      "explanation": "Não se pode afirmar, pois o fato de alguns B serem C não garante que os B que são A também sejam C.",
-      "difficulty": "dificil"
-    },
-    {
-      "category": "Administração Pública",
-      "hook": "Gestão para Concursos!",
-      "question": "O que significa a sigla LIMPE no Direito Administrativo?",
-      "options": ["Princípios da Administração", "Órgãos do Governo", "Tipos de Licitação", "Cargos Públicos"],
-      "correct_index": 0,
-      "explanation": "LIMPE refere-se aos princípios: Legalidade, Impessoalidade, Moralidade, Publicidade e Eficiência.",
+      "explanation": "Em 'Pássaro', o 'ss' é um dígrafo, pois as duas letras representam um único fonema sibilante.",
       "difficulty": "facil"
     },
     {
@@ -82,13 +55,40 @@
       "difficulty": "medio"
     },
     {
-      "category": "Atualidades",
-      "hook": "Atualidades para Concursos!",
-      "question": "Qual país sediará a COP30 em 2025?",
-      "options": ["Estados Unidos", "China", "Brasil", "Egito"],
+      "category": "Raciocínio Lógico",
+      "hook": "Lógica para Concursos!",
+      "question": "Se todo A é B e algum B é C, pode-se afirmar que todo A é C?",
+      "options": ["Sim", "Não", "Depende de B", "Depende de A"],
+      "correct_index": 1,
+      "explanation": "Não se pode afirmar, pois o fato de alguns B serem C não garante que os B que são A também sejam C.",
+      "difficulty": "dificil"
+    },
+    {
+      "category": "Geografia do Brasil",
+      "hook": "Geografia Concurso!",
+      "question": "Qual é o maior bioma brasileiro em extensão territorial?",
+      "options": ["Cerrado", "Mata Atlântica", "Amazônia", "Pantanal"],
       "correct_index": 2,
-      "explanation": "O Brasil sediará a COP30 na cidade de Belém, no Pará.",
-      "difficulty": "medio"
+      "explanation": "A Amazônia é o maior bioma do Brasil, ocupando quase metade do território nacional.",
+      "difficulty": "facil"
+    },
+    {
+      "category": "Administração Pública",
+      "hook": "Gestão para Concursos!",
+      "question": "O que significa a sigla LIMPE no Direito Administrativo?",
+      "options": ["Princípios da Administração", "Órgãos do Governo", "Tipos de Licitação", "Cargos Públicos"],
+      "correct_index": 0,
+      "explanation": "LIMPE refere-se aos princípios: Legalidade, Impessoalidade, Moralidade, Publicidade e Eficiência.",
+      "difficulty": "facil"
+    },
+    {
+      "category": "História do Brasil",
+      "hook": "História Concurso!",
+      "question": "Em que ano ocorreu a Proclamação da República no Brasil?",
+      "options": ["1822", "1888", "1889", "1930"],
+      "correct_index": 2,
+      "explanation": "A República foi proclamada em 15 de novembro de 1889 pelo Marechal Deodoro da Fonseca.",
+      "difficulty": "facil"
     }
   ]
 }
