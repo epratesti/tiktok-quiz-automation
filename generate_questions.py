@@ -171,7 +171,7 @@ class QuestionGenerator:
         attempt = 0
 
         # Fontes disponíveis - Prioridade para Conhecimentos Gerais
-        sources = [self._from_openai, self._from_open_trivia, self._from_local_json]
+        sources = [self._from_openai, self._from_open_trivia, self._from_local_json, self._from_synthetic_conhecimentos_gerais]
 
         while len(selected) < count and attempt < max_attempts:
             attempt += 1
@@ -223,16 +223,28 @@ class QuestionGenerator:
                 trivia_qs = self._from_open_trivia(1)
                 if trivia_qs: q = trivia_qs[0]
 
+            if not q:
+                synthetic_qs = self._from_synthetic_conhecimentos_gerais(4)
+                q = next((item for item in synthetic_qs if not self.history.seen(item)), None)
+
             if q and not self.history.seen(q):
                 selected.append(q)
+                categories_used.add(q.category)
                 self.history.add_many([q])
 
         # Apenas como ÚLTIMO RECURSO absoluto para não quebrar o vídeo
         # Removido o gerador de matemática sintética para evitar vídeos indesejados
         if len(selected) < count:
-            logger.warning("Não foi possível gerar perguntas inéditas suficientes. Usando banco local de emergência.")
-            emergency_qs = self._from_local_json(count - len(selected))
-            selected.extend(emergency_qs)
+            logger.warning("Nao foi possivel gerar perguntas ineditas suficientes nas APIs. Usando banco ampliado de conhecimentos gerais.")
+            emergency_qs = self._from_synthetic_conhecimentos_gerais(80) + self._from_local_json(40)
+            for eq in emergency_qs:
+                if len(selected) >= count:
+                    break
+                if self.history.seen(eq):
+                    continue
+                selected.append(eq)
+                categories_used.add(eq.category)
+                self.history.add_many([eq])
 
         return selected[:count]
 
@@ -372,6 +384,103 @@ class QuestionGenerator:
             return [self._normalize(i, "local_json") for i in items[:limit]]
         except Exception:
             return []
+
+    def _from_synthetic_conhecimentos_gerais(self, limit: int) -> list[QuizQuestion]:
+        """Gera um banco local grande de conhecimentos gerais sem repetir assinaturas."""
+        facts = [
+            ("Geografia", "Amazonia", "maior bioma brasileiro em extensao territorial", "A Amazonia ocupa a maior area entre os biomas do Brasil."),
+            ("Geografia", "Cerrado", "bioma brasileiro conhecido por savanas tropicais", "O Cerrado tem vegetacao adaptada a seca sazonal e grande biodiversidade."),
+            ("Geografia", "Pantanal", "grande planicie inundavel brasileira", "O Pantanal se destaca pelo regime de cheias e por sua biodiversidade."),
+            ("Geografia", "Caatinga", "bioma exclusivamente brasileiro do semiarido", "A Caatinga e o unico bioma exclusivamente brasileiro."),
+            ("Geografia", "Pampa", "bioma de campos predominante no Rio Grande do Sul", "O Pampa brasileiro aparece principalmente no Rio Grande do Sul."),
+            ("Geografia", "Mata Atlantica", "bioma muito reduzido pela ocupacao historica do litoral", "A Mata Atlantica foi intensamente desmatada desde a colonizacao."),
+            ("Geografia", "Rio Amazonas", "rio de maior volume de agua do mundo", "O rio Amazonas e reconhecido pelo enorme volume de agua."),
+            ("Geografia", "Planalto Central", "area associada a Brasilia e ao Distrito Federal", "Brasilia foi construida no Planalto Central."),
+            ("Geografia", "Equador", "linha imaginaria que divide a Terra em hemisferios norte e sul", "A Linha do Equador divide a Terra em hemisferio norte e sul."),
+            ("Geografia", "Meridiano de Greenwich", "referencia para a longitude zero", "O Meridiano de Greenwich e a referencia internacional da longitude zero."),
+            ("Historia do Brasil", "Independencia do Brasil", "processo proclamado em 1822", "A Independencia do Brasil foi proclamada em 1822."),
+            ("Historia do Brasil", "Abolicao da escravidao", "evento formalizado pela Lei Aurea em 1888", "A Lei Aurea aboliu formalmente a escravidao em 1888."),
+            ("Historia do Brasil", "Proclamacao da Republica", "evento ocorrido em 1889", "A Republica foi proclamada no Brasil em 1889."),
+            ("Historia do Brasil", "Constituicao de 1988", "texto conhecido como Constituicao Cidada", "A Constituicao de 1988 marcou a redemocratizacao brasileira."),
+            ("Historia do Brasil", "Era Vargas", "periodo iniciado com a Revolucao de 1930", "A Era Vargas comecou apos a Revolucao de 1930."),
+            ("Historia do Brasil", "Inconfidencia Mineira", "movimento associado a Tiradentes", "Tiradentes e o personagem mais lembrado da Inconfidencia Mineira."),
+            ("Historia do Brasil", "Guerra de Canudos", "conflito ocorrido no interior da Bahia", "Canudos ocorreu no sertao baiano no fim do seculo XIX."),
+            ("Historia do Brasil", "Ciclo do ouro", "atividade colonial que fortaleceu Minas Gerais", "A exploracao do ouro impulsionou a ocupacao de Minas Gerais."),
+            ("Historia Geral", "Revolucao Francesa", "processo iniciado em 1789", "A Revolucao Francesa comecou em 1789 e transformou a politica moderna."),
+            ("Historia Geral", "Revolucao Industrial", "processo associado a mecanizacao da producao", "A Revolucao Industrial ampliou o uso de maquinas na producao."),
+            ("Historia Geral", "Guerra Fria", "disputa geopolitica entre Estados Unidos e Uniao Sovietica", "A Guerra Fria marcou a rivalidade entre EUA e URSS."),
+            ("Historia Geral", "Renascimento", "movimento cultural europeu de valorizacao do humanismo", "O Renascimento valorizou o humanismo e a cultura classica."),
+            ("Ciencia", "Fotossintese", "processo em que plantas produzem glicose usando luz", "Na fotossintese, plantas usam luz, agua e gas carbonico para produzir glicose."),
+            ("Ciencia", "Mitocondria", "organela associada a producao de energia celular", "A mitocondria participa da respiracao celular e da producao de ATP."),
+            ("Ciencia", "DNA", "molecula que armazena informacao genetica", "O DNA carrega instrucoes geneticas dos seres vivos."),
+            ("Ciencia", "Evaporacao", "transformacao de agua liquida em vapor pela acao do calor", "Evaporacao e a transformacao de liquido em vapor."),
+            ("Ciencia", "Condensacao", "formacao de goticulas quando o vapor esfria", "Condensacao ocorre quando vapor se transforma em liquido."),
+            ("Ciencia", "Gravidade", "forca de atracao entre corpos com massa", "A gravidade atrai corpos que possuem massa."),
+            ("Ciencia", "Oxigenio", "gas essencial para respiracao humana", "O oxigenio participa da respiracao celular humana."),
+            ("Ciencia", "Agua", "substancia formada por hidrogenio e oxigenio", "A formula da agua e H2O."),
+            ("Literatura", "Machado de Assis", "autor de Dom Casmurro", "Machado de Assis escreveu Dom Casmurro."),
+            ("Literatura", "Carlos Drummond de Andrade", "poeta modernista brasileiro", "Drummond e um dos grandes nomes da poesia modernista brasileira."),
+            ("Literatura", "Clarice Lispector", "autora de A Hora da Estrela", "Clarice Lispector escreveu A Hora da Estrela."),
+            ("Literatura", "Modernismo brasileiro", "movimento marcado pela Semana de Arte Moderna de 1922", "A Semana de 1922 e marco do Modernismo no Brasil."),
+            ("Literatura", "Realismo", "escola literaria associada a critica social e psicologica", "O Realismo buscou analisar a sociedade com olhar critico."),
+            ("Artes e Cultura", "Aleijadinho", "artista barroco brasileiro ligado a Minas Gerais", "Aleijadinho e grande nome do barroco mineiro."),
+            ("Artes e Cultura", "Tarsila do Amaral", "artista modernista autora de Abaporu", "Tarsila do Amaral pintou Abaporu."),
+            ("Artes e Cultura", "Oscar Niemeyer", "arquiteto associado a Brasilia", "Niemeyer projetou importantes edificios de Brasilia."),
+            ("Artes e Cultura", "Samba", "manifestacao cultural fortemente ligada ao Brasil", "O samba e uma das principais expressoes culturais brasileiras."),
+            ("Politica e Cidadania", "Tres Poderes", "Executivo, Legislativo e Judiciario", "A organizacao classica dos poderes inclui Executivo, Legislativo e Judiciario."),
+            ("Politica e Cidadania", "Voto direto", "forma em que o eleitor escolhe diretamente seu representante", "No voto direto, o eleitor vota diretamente no candidato ou opcao."),
+            ("Politica e Cidadania", "Cidadania", "exercicio de direitos e deveres na vida publica", "Cidadania envolve participacao social, direitos e deveres."),
+            ("Politica e Cidadania", "Soberania popular", "ideia de que o poder emana do povo", "A soberania popular expressa que o poder tem origem no povo."),
+            ("Economia", "Inflacao", "aumento generalizado e persistente dos precos", "Inflacao e a alta continua e generalizada dos precos."),
+            ("Economia", "PIB", "soma dos bens e servicos finais produzidos em um periodo", "O PIB mede a producao final de bens e servicos de uma economia."),
+            ("Economia", "Juros", "remuneracao pelo uso do dinheiro ao longo do tempo", "Juros representam o custo ou remuneracao do dinheiro no tempo."),
+            ("Economia", "Oferta e demanda", "relacao que influencia precos de mercado", "Precos podem variar conforme oferta e demanda."),
+            ("Matematica Basica", "Porcentagem", "representacao de uma parte em cem", "Porcentagem indica uma proporcao em relacao a cem."),
+            ("Matematica Basica", "Media aritmetica", "soma dos valores dividida pela quantidade de valores", "A media aritmetica e calculada somando valores e dividindo pela quantidade."),
+            ("Matematica Basica", "Regra de tres", "tecnica para resolver proporcoes", "Regra de tres usa proporcionalidade entre grandezas."),
+            ("Matematica Basica", "Numero primo", "numero natural com exatamente dois divisores positivos", "Numero primo possui apenas dois divisores positivos: 1 e ele mesmo."),
+            ("Informatica", "Phishing", "golpe que tenta obter dados por mensagem enganosa", "Phishing usa mensagens falsas para roubar informacoes."),
+            ("Informatica", "Backup", "copia de seguranca dos dados", "Backup e uma copia criada para recuperar dados em caso de perda."),
+            ("Informatica", "Firewall", "filtro de trafego de rede", "Firewall ajuda a controlar conexoes permitidas e bloqueadas."),
+            ("Informatica", "Criptografia", "tecnica para proteger informacoes por codificacao", "Criptografia transforma dados para proteger seu conteudo."),
+            ("Informatica", "Autenticacao em dois fatores", "camada extra de verificacao de identidade", "A autenticacao em dois fatores acrescenta uma etapa alem da senha."),
+        ]
+
+        distractors = [fact[1] for fact in facts]
+        questions = []
+        shuffled = facts.copy()
+        random.shuffle(shuffled)
+        for category, subject, description, explanation in shuffled:
+            wrong_options = [item for item in distractors if item != subject]
+            options = random.sample(wrong_options, k=3) + [subject]
+            random.shuffle(options)
+            if category.startswith("Historia"):
+                question = f"Qual fato historico esta corretamente associado a esta descricao: {description}?"
+            elif category == "Geografia":
+                question = f"Em geografia, qual alternativa identifica corretamente: {description}?"
+            elif category == "Ciencia":
+                question = f"Nas ciencias, qual conceito corresponde a esta definicao: {description}?"
+            elif category == "Literatura":
+                question = f"Na literatura, qual alternativa combina com esta pista: {description}?"
+            elif category in {"Artes e Cultura", "Politica e Cidadania", "Economia", "Informatica"}:
+                question = f"Em {category.lower()}, qual alternativa esta ligada a: {description}?"
+            else:
+                question = f"Qual alternativa de conhecimentos gerais corresponde a: {description}?"
+            questions.append(
+                QuizQuestion(
+                    id=self._stable_id(f"{category}:{subject}:{description}"),
+                    category=category,
+                    hook="Conhecimentos gerais de concurso!",
+                    question=question,
+                    options=options,
+                    correct_index=options.index(subject),
+                    explanation=explanation,
+                    source="synthetic_general_knowledge",
+                    difficulty="medio",
+                )
+            )
+
+        return questions[:limit]
 
     def _make_math_question(self) -> QuizQuestion:
         """Gera perguntas de matemática de nível médio/concurso."""
