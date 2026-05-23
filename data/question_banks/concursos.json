@@ -1,0 +1,92 @@
+{
+  "questions": [
+    {
+      "type": "concursos",
+      "topic": "impessoalidade",
+      "category": "Direito Administrativo",
+      "hook": "Questao de concurso!",
+      "question": "Qual principio impede favoritismo e perseguicao na administracao publica?",
+      "options": ["Legalidade", "Impessoalidade", "Publicidade", "Eficiencia"],
+      "correct_index": 1,
+      "explanation": "A impessoalidade exige finalidade publica e tratamento sem favorecimentos pessoais.",
+      "difficulty": "medio"
+    },
+    {
+      "type": "concursos",
+      "topic": "legalidade_penal",
+      "category": "Direito Penal",
+      "hook": "Penal para concursos!",
+      "question": "Qual principio afirma que nao ha crime sem lei anterior que o defina?",
+      "options": ["Legalidade", "Insignificancia", "Humanidade", "Culpabilidade"],
+      "correct_index": 0,
+      "explanation": "O principio da legalidade exige lei anterior para definir crime e pena.",
+      "difficulty": "medio"
+    },
+    {
+      "type": "concursos",
+      "topic": "medida_provisoria",
+      "category": "Direito Constitucional",
+      "hook": "Constitucional em prova!",
+      "question": "Qual e o prazo maximo de uma medida provisoria com prorrogacao?",
+      "options": ["60 dias", "90 dias", "120 dias", "180 dias"],
+      "correct_index": 2,
+      "explanation": "A medida provisoria vale por 60 dias, prorrogaveis uma vez por mais 60.",
+      "difficulty": "medio"
+    },
+    {
+      "type": "concursos",
+      "topic": "crase",
+      "category": "Lingua Portuguesa",
+      "hook": "Portugues de concurso!",
+      "question": "Em regra, a crase ocorre pela fusao da preposicao 'a' com qual termo?",
+      "options": ["Artigo feminino 'a'", "Pronome masculino", "Verbo no infinitivo", "Adverbio de modo"],
+      "correct_index": 0,
+      "explanation": "A crase geralmente resulta da fusao da preposicao a com o artigo feminino a.",
+      "difficulty": "medio"
+    },
+    {
+      "type": "concursos",
+      "topic": "sujeito_indeterminado",
+      "category": "Lingua Portuguesa",
+      "hook": "Pegadinha de portugues!",
+      "question": "Com indice de indeterminacao do sujeito, o verbo fica em qual forma?",
+      "options": ["Plural obrigatorio", "Terceira pessoa do singular", "Primeira pessoa do plural", "Infinitivo pessoal"],
+      "correct_index": 1,
+      "explanation": "Com indice de indeterminacao do sujeito, usa-se a terceira pessoa do singular.",
+      "difficulty": "dificil"
+    },
+    {
+      "type": "concursos",
+      "topic": "cvm",
+      "category": "Conhecimentos Bancarios",
+      "hook": "Banco e mercado!",
+      "question": "A CVM regula e fiscaliza principalmente qual mercado no Brasil?",
+      "options": ["Mercado de capitais", "Mercado de seguros", "Mercado de trabalho", "Mercado imobiliario"],
+      "correct_index": 0,
+      "explanation": "A CVM atua na regulacao e fiscalizacao do mercado de capitais.",
+      "difficulty": "medio"
+    },
+    {
+      "type": "concursos",
+      "topic": "limpe",
+      "category": "Direito Administrativo",
+      "hook": "Administrativo rapido!",
+      "question": "A sigla LIMPE resume principios de qual area?",
+      "options": ["Direito Administrativo", "Direito Penal", "Direito Civil", "Direito Empresarial"],
+      "correct_index": 0,
+      "explanation": "LIMPE lembra Legalidade, Impessoalidade, Moralidade, Publicidade e Eficiencia.",
+      "difficulty": "facil"
+    },
+    {
+      "type": "concursos",
+      "topic": "bicondicional",
+      "category": "Raciocinio Logico",
+      "hook": "Logica para concursos!",
+      "question": "Quando uma proposicao bicondicional e verdadeira?",
+      "options": ["Quando ambas tem valores iguais", "Quando P e falsa sempre", "Quando Q e falsa sempre", "Quando so P e verdadeira"],
+      "correct_index": 0,
+      "explanation": "O bicondicional e verdadeiro quando as duas proposicoes tem o mesmo valor logico.",
+      "difficulty": "dificil"
+    }
+  ]
+}

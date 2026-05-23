@@ -1,0 +1,48 @@
+{
+  "questions": [
+    {
+      "type": "raciocinio_logico",
+      "topic": "condicional",
+      "category": "Raciocinio Logico",
+      "hook": "Logica de concurso!",
+      "question": "Em logica, a proposicao 'Se P, entao Q' e equivalente a qual forma?",
+      "options": ["P e Q", "Nao P ou Q", "P ou nao Q", "Nao P e nao Q"],
+      "correct_index": 1,
+      "explanation": "A condicional P implica Q equivale logicamente a nao P ou Q.",
+      "difficulty": "dificil"
+    },
+    {
+      "type": "raciocinio_logico",
+      "topic": "demorgan_conjuncao",
+      "category": "Raciocinio Logico",
+      "hook": "Leis de De Morgan!",
+      "question": "Qual e a negacao correta de 'P e Q'?",
+      "options": ["Nao P e nao Q", "Nao P ou nao Q", "P ou Q", "Nao P e Q"],
+      "correct_index": 1,
+      "explanation": "Pelas leis de De Morgan, negar uma conjuncao vira disjuncao das negacoes.",
+      "difficulty": "medio"
+    },
+    {
+      "type": "raciocinio_logico",
+      "topic": "sequencia_pares",
+      "category": "Raciocinio Logico",
+      "hook": "Complete a sequencia!",
+      "question": "Qual numero completa a sequencia: 2, 4, 8, 16, ?",
+      "options": ["24", "30", "32", "36"],
+      "correct_index": 2,
+      "explanation": "Cada termo dobra o anterior: depois de 16 vem 32.",
+      "difficulty": "facil"
+    },
+    {
+      "type": "raciocinio_logico",
+      "topic": "sequencia_quadrados",
+      "category": "Raciocinio Logico",
+      "hook": "Sequencia relampago!",
+      "question": "Qual numero completa a sequencia: 1, 4, 9, 16, ?",
+      "options": ["20", "25", "27", "32"],
+      "correct_index": 1,
+      "explanation": "A sequencia usa quadrados perfeitos: 1, 4, 9, 16 e 25.",
+      "difficulty": "medio"
+    }
+  ]
+}

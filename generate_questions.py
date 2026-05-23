@@ -8,6 +8,7 @@ import os
 import random
 import re
 import time
+import unicodedata
 from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any
@@ -33,6 +34,8 @@ class QuizQuestion:
     explanation: str
     source: str
     difficulty: str = "medio"
+    question_type: str = "conhecimentos_gerais"
+    topic: str = ""
 
     @property
     def correct_answer(self) -> str:
@@ -42,7 +45,7 @@ class QuizQuestion:
         """Gera uma assinatura baseada em palavras-chave para detectar e bloquear paráfrases e temas repetidos."""
         # Normalização: remove pontuação e mantém apenas palavras significativas (>3 letras)
         clean_q = re.sub(r"[^a-z0-9\s]", "", self.question.lower())
-        words = [w for w in clean_q.split() if len(w) > 3]
+        words = [w for w in clean_q.split() if len(w) > 3 or any(char.isdigit() for char in w)]
         # Ordenamos as palavras para que a ordem da frase não mude a assinatura (detecta a mesma ideia reescrita)
         words.sort()
         # Se a pergunta for muito curta, usamos a resposta correta para ajudar na distinção
@@ -113,7 +116,7 @@ class QuestionHistory:
             import re
             question_text = data.get("question", "").lower()
             clean_q = re.sub(r"[^a-z0-9\s]", "", question_text)
-            words = [w for w in clean_q.split() if len(w) > 3]
+            words = [w for w in clean_q.split() if len(w) > 3 or any(char.isdigit() for char in w)]
             words.sort()
             if len(words) < 3:
                 options = data.get("options", [])
@@ -163,7 +166,7 @@ class QuestionGenerator:
     def __init__(self) -> None:
         self.history = QuestionHistory(settings.paths.history_json)
 
-    def generate_batch(self, count: int = 3) -> list[QuizQuestion]:
+    def _generate_batch_legacy(self, count: int = 3) -> list[QuizQuestion]:
         """Gera perguntas inéditas garantindo diversidade e eliminando dominância de matemática."""
         selected: list[QuizQuestion] = []
         categories_used = set()
@@ -248,6 +251,86 @@ class QuestionGenerator:
 
         return selected[:count]
 
+    def generate_batch(self, count: int = 3) -> list[QuizQuestion]:
+        """Gera perguntas ineditas mantendo cada video dentro de um mesmo tipo."""
+        selected: list[QuizQuestion] = []
+        categories_used: set[str] = set()
+        topics_used: set[str] = set()
+        max_attempts = 30
+        attempt = 0
+        target_type = self._select_question_type()
+        logger.info("Tipo de perguntas escolhido para este video: %s", target_type)
+
+        sources = [
+            ("question_banks", lambda limit: self._from_question_banks(limit, target_type)),
+            ("openai", self._from_openai),
+            ("opentdb", self._from_open_trivia),
+            ("local_json", self._from_local_json),
+            ("synthetic", self._from_synthetic_conhecimentos_gerais),
+        ]
+
+        while len(selected) < count and attempt < max_attempts:
+            attempt += 1
+            current_sources = sources.copy()
+            random.shuffle(current_sources)
+
+            for source_name, source_func in current_sources:
+                if len(selected) >= count:
+                    break
+                try:
+                    candidates = source_func(count * 3)
+                    for q in candidates:
+                        if self._can_select_question(q, selected, categories_used, topics_used, target_type):
+                            selected.append(q)
+                            categories_used.add(q.category)
+                            if q.topic:
+                                topics_used.add(q.topic)
+                            self.history.add_many([q])
+                            logger.info("Selecionada (%s | %s): %s...", q.source, q.category, q.question[:50])
+                            if len(selected) >= count:
+                                break
+                except Exception as exc:
+                    logger.debug("Fonte %s falhou: %s", source_name, exc)
+
+        if len(selected) < count:
+            logger.warning("Nao foi possivel gerar %s perguntas ineditas do tipo %s.", count, target_type)
+
+        return selected[:count]
+
+    def _can_select_question(
+        self,
+        question: QuizQuestion,
+        selected: list[QuizQuestion],
+        categories_used: set[str],
+        topics_used: set[str],
+        target_type: str,
+    ) -> bool:
+        if question.question_type != target_type:
+            return False
+        if self.history.seen(question):
+            return False
+        if question.question_type not in {"charadas", "raciocinio_logico"} and question.category in categories_used:
+            return False
+        if question.topic and question.topic in topics_used:
+            return False
+
+        is_math = "matematica" in self._plain(question.category) or "raciocinio logico" in self._plain(question.category)
+        has_math = any("matematica" in self._plain(item.category) or "raciocinio logico" in self._plain(item.category) for item in selected)
+        return not (is_math and has_math)
+
+    def _select_question_type(self) -> str:
+        requested_type = os.getenv("QUESTION_TYPE", "").strip().lower()
+        if requested_type:
+            return requested_type
+
+        return "conhecimentos_gerais"
+
+    def _available_question_types(self) -> list[str]:
+        types = set()
+        for question in self._from_question_banks(500):
+            types.add(question.question_type)
+        return sorted(types)
+
     def _from_openai(self, limit: int) -> list[QuizQuestion]:
         if not settings.ai.openai_enabled or not settings.ai.openai_api_key:
             return []
@@ -295,7 +378,12 @@ class QuestionGenerator:
             if "```json" in content:
                 content = content.split("```json")[1].split("```")[0].strip()
             data = json.loads(content)
-            return [self._normalize(q, "openai") for q in data.get("questions", [])]
+            questions = []
+            for item in data.get("questions", []):
+                item.setdefault("type", "concursos")
+                item.setdefault("topic", item.get("category", "concursos"))
+                questions.append(self._normalize(item, "openai"))
+            return questions
         except Exception as e:
             logger.error(f"Erro OpenAI: {e}")
             return []
@@ -325,6 +413,8 @@ class QuestionGenerator:
                 random.shuffle(options)
                 
                 raw_q = {
+                    "type": "conhecimentos_gerais",
+                    "topic": html.unescape(item["category"]),
                     "category": html.unescape(item["category"]),
                     "question": q_text,
                     "options": options,
@@ -372,6 +462,61 @@ class QuestionGenerator:
             return q
         except Exception:
             return None
+
+    def _from_question_banks(self, limit: int, question_type: str | None = None) -> list[QuizQuestion]:
+        bank_dir = settings.paths.data / "question_banks"
+        if not bank_dir.exists():
+            return []
+
+        questions: list[QuizQuestion] = []
+        for path in sorted(bank_dir.glob("*.json")):
+            try:
+                data = json.loads(path.read_text(encoding="utf-8"))
+                items = data.get("questions", [])
+                for index, item in enumerate(items, start=1):
+                    errors = self._validate_question_item(item)
+                    if errors:
+                        logger.warning("Pergunta invalida em %s #%s: %s", path.name, index, "; ".join(errors))
+                        continue
+                    q = self._normalize(item, f"bank:{path.stem}")
+                    if question_type and q.question_type != question_type:
+                        continue
+                    questions.append(q)
+            except Exception as exc:
+                logger.error("Erro ao carregar banco %s: %s", path, exc)
+
+        random.shuffle(questions)
+        return questions[:limit]
+
+    def _validate_question_item(self, item: dict) -> list[str]:
+        errors = []
+        for field_name in ("type", "topic", "category", "hook", "question", "options", "correct_index", "explanation"):
+            if field_name not in item:
+                errors.append(f"campo ausente: {field_name}")
+
+        options = item.get("options", [])
+        if not isinstance(options, list) or len(options) != 4:
+            errors.append("options precisa ter exatamente 4 alternativas")
+        elif len({str(option).strip().lower() for option in options}) != 4:
+            errors.append("options tem alternativas duplicadas")
+
+        correct_index = item.get("correct_index")
+        if not isinstance(correct_index, int) or correct_index < 0 or correct_index > 3:
+            errors.append("correct_index precisa ser um inteiro de 0 a 3")
+
+        for field_name in ("type", "topic", "category", "hook", "question", "explanation"):
+            value = item.get(field_name, "")
+            if not isinstance(value, str) or not value.strip():
+                errors.append(f"{field_name} precisa ser texto nao vazio")
+
+        question = str(item.get("question", ""))
+        explanation = str(item.get("explanation", ""))
+        if len(question) > 150:
+            errors.append("question esta longa demais para o layout")
+        if len(explanation) > 180:
+            errors.append("explanation esta longa demais para narracao curta")
+
+        return errors
 
     def _from_local_json(self, limit: int) -> list[QuizQuestion]:
         path = settings.paths.questions_json
@@ -481,6 +626,8 @@ class QuestionGenerator:
                     explanation=explanation,
                     source="synthetic_general_knowledge",
                     difficulty="medio",
+                    question_type="conhecimentos_gerais",
+                    topic=self._plain(subject),
                 )
             )
 
@@ -533,6 +680,7 @@ class QuestionGenerator:
         )
 
     def _normalize(self, item: dict, source: str) -> QuizQuestion:
+        question_type = item.get("type", item.get("question_type", "conhecimentos_gerais"))
         return QuizQuestion(
             id=str(item.get("id", self._stable_id(item["question"]))),
             category=item.get("category", "geral"),
@@ -541,11 +689,19 @@ class QuestionGenerator:
             options=item["options"][:4],
             correct_index=item["correct_index"],
             explanation=item.get("explanation", ""),
-            source=source
+            source=source,
+            difficulty=item.get("difficulty", "medio"),
+            question_type=self._plain(question_type),
+            topic=self._plain(item.get("topic", item.get("category", ""))),
         )
 
     def _stable_id(self, text: str) -> str:
         return hashlib.sha256(text.encode()).hexdigest()[:12]
+
+    def _plain(self, text: str) -> str:
+        normalized = unicodedata.normalize("NFKD", str(text))
+        ascii_text = normalized.encode("ascii", "ignore").decode("ascii")
+        return re.sub(r"[^a-z0-9]+", "_", ascii_text.lower()).strip("_")
 
 
 def question_to_dict(question: QuizQuestion) -> dict[str, Any]:

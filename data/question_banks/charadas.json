@@ -1,0 +1,70 @@
+{
+  "questions": [
+    {
+      "type": "charadas",
+      "topic": "buraco",
+      "category": "Charadas",
+      "hook": "Charada rapida!",
+      "question": "O que e, o que e: quanto mais se tira, maior fica?",
+      "options": ["Buraco", "Sombra", "Eco", "Relogio"],
+      "correct_index": 0,
+      "explanation": "E o buraco: quanto mais voce tira terra, maior ele fica.",
+      "difficulty": "facil"
+    },
+    {
+      "type": "charadas",
+      "topic": "eco",
+      "category": "Charadas",
+      "hook": "Pegadinha de genio!",
+      "question": "O que responde sem ter boca e escuta sem ter ouvido?",
+      "options": ["Espelho", "Eco", "Vento", "Sino"],
+      "correct_index": 1,
+      "explanation": "E o eco, que repete sons sem falar de verdade.",
+      "difficulty": "medio"
+    },
+    {
+      "type": "charadas",
+      "topic": "sombra",
+      "category": "Charadas",
+      "hook": "Charada de 10 segundos!",
+      "question": "O que sempre te acompanha, mas desaparece no escuro?",
+      "options": ["Sombra", "Memoria", "Pegada", "Reflexo"],
+      "correct_index": 0,
+      "explanation": "A sombra depende da luz; no escuro, ela desaparece.",
+      "difficulty": "facil"
+    },
+    {
+      "type": "charadas",
+      "topic": "vela",
+      "category": "Charadas",
+      "hook": "Essa parece facil!",
+      "question": "O que fica menor quanto mais trabalha?",
+      "options": ["Vela", "Tesoura", "Pilha", "Motor"],
+      "correct_index": 0,
+      "explanation": "A vela diminui enquanto queima para iluminar.",
+      "difficulty": "facil"
+    },
+    {
+      "type": "charadas",
+      "topic": "mapa",
+      "category": "Charadas",
+      "hook": "Charada inteligente!",
+      "question": "O que tem cidades, ruas e rios, mas nao tem pessoas nem agua?",
+      "options": ["Mapa", "Livro", "Quadro", "Calendario"],
+      "correct_index": 0,
+      "explanation": "O mapa mostra lugares e rios, mas nao contem pessoas nem agua real.",
+      "difficulty": "medio"
+    },
+    {
+      "type": "charadas",
+      "topic": "relogio",
+      "category": "Charadas",
+      "hook": "Pensa rapido!",
+      "question": "O que tem ponteiros, mas nao tem maos?",
+      "options": ["Bussola", "Relogio", "Termometro", "Placa"],
+      "correct_index": 1,
+      "explanation": "O relogio tem ponteiros que marcam as horas.",
+      "difficulty": "facil"
+    }
+  ]
+}

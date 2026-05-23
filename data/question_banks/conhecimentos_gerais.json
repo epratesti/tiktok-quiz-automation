@@ -1,0 +1,114 @@
+{
+  "questions": [
+    {
+      "type": "conhecimentos_gerais",
+      "topic": "juros",
+      "category": "Economia",
+      "hook": "Conhecimentos gerais!",
+      "question": "Em economia, qual conceito representa a remuneracao pelo uso do dinheiro ao longo do tempo?",
+      "options": ["Juros", "Inflacao", "PIB", "Cambio"],
+      "correct_index": 0,
+      "explanation": "Juros sao o custo ou a remuneracao pelo uso do dinheiro durante um periodo.",
+      "difficulty": "medio"
+    },
+    {
+      "type": "conhecimentos_gerais",
+      "topic": "inflacao",
+      "category": "Economia",
+      "hook": "Economia sem enrolacao!",
+      "question": "Qual termo indica o aumento generalizado e persistente dos precos?",
+      "options": ["Deflacao", "Inflacao", "Recessao", "Superavit"],
+      "correct_index": 1,
+      "explanation": "Inflacao e a alta continua e generalizada dos precos em uma economia.",
+      "difficulty": "facil"
+    },
+    {
+      "type": "conhecimentos_gerais",
+      "topic": "phishing",
+      "category": "Informatica",
+      "hook": "Informatica cai muito!",
+      "question": "Em seguranca digital, qual golpe tenta obter dados por mensagem enganosa?",
+      "options": ["Firewall", "Backup", "Phishing", "Criptografia"],
+      "correct_index": 2,
+      "explanation": "Phishing usa mensagens falsas para enganar a vitima e roubar informacoes.",
+      "difficulty": "facil"
+    },
+    {
+      "type": "conhecimentos_gerais",
+      "topic": "backup",
+      "category": "Informatica",
+      "hook": "Teste rapido de informatica!",
+      "question": "Qual pratica cria uma copia de seguranca para recuperar dados perdidos?",
+      "options": ["Backup", "Malware", "Cache", "Firewall"],
+      "correct_index": 0,
+      "explanation": "Backup e uma copia de seguranca usada para restaurar dados quando necessario.",
+      "difficulty": "facil"
+    },
+    {
+      "type": "conhecimentos_gerais",
+      "topic": "machado_de_assis",
+      "category": "Literatura",
+      "hook": "Literatura brasileira!",
+      "question": "Qual autor brasileiro escreveu Dom Casmurro?",
+      "options": ["Jose de Alencar", "Machado de Assis", "Lima Barreto", "Graciliano Ramos"],
+      "correct_index": 1,
+      "explanation": "Dom Casmurro e uma das obras mais conhecidas de Machado de Assis.",
+      "difficulty": "facil"
+    },
+    {
+      "type": "conhecimentos_gerais",
+      "topic": "drummond",
+      "category": "Literatura",
+      "hook": "Poetas do Brasil!",
+      "question": "Qual escritor e um dos principais poetas do Modernismo brasileiro?",
+      "options": ["Carlos Drummond de Andrade", "Aluisio Azevedo", "Castro Alves", "Euclides da Cunha"],
+      "correct_index": 0,
+      "explanation": "Carlos Drummond de Andrade e um dos maiores nomes da poesia modernista.",
+      "difficulty": "medio"
+    },
+    {
+      "type": "conhecimentos_gerais",
+      "topic": "amazonia",
+      "category": "Geografia",
+      "hook": "Geografia do Brasil!",
+      "question": "Qual e o maior bioma brasileiro em extensao territorial?",
+      "options": ["Cerrado", "Caatinga", "Pantanal", "Amazonia"],
+      "correct_index": 3,
+      "explanation": "A Amazonia ocupa a maior area entre os biomas brasileiros.",
+      "difficulty": "facil"
+    },
+    {
+      "type": "conhecimentos_gerais",
+      "topic": "pantanal",
+      "category": "Geografia",
+      "hook": "Geografia para acertar!",
+      "question": "Qual bioma brasileiro e conhecido como uma grande planicie inundavel?",
+      "options": ["Pantanal", "Pampa", "Mata Atlantica", "Cerrado"],
+      "correct_index": 0,
+      "explanation": "O Pantanal se destaca pelo regime de cheias e pela biodiversidade.",
+      "difficulty": "medio"
+    },
+    {
+      "type": "conhecimentos_gerais",
+      "topic": "fotossintese",
+      "category": "Ciencia",
+      "hook": "Ciencia em segundos!",
+      "question": "Qual processo permite que plantas produzam glicose usando luz?",
+      "options": ["Fermentacao", "Fotossintese", "Condensacao", "Evaporacao"],
+      "correct_index": 1,
+      "explanation": "Na fotossintese, plantas usam luz, agua e gas carbonico para produzir glicose.",
+      "difficulty": "medio"
+    },
+    {
+      "type": "conhecimentos_gerais",
+      "topic": "mitocondria",
+      "category": "Ciencia",
+      "hook": "Ciencia que cai!",
+      "question": "Qual organela esta associada a producao de energia celular?",
+      "options": ["Ribossomo", "Nucleo", "Mitocondria", "Lisossomo"],
+      "correct_index": 2,
+      "explanation": "A mitocondria participa da respiracao celular e da producao de ATP.",
+      "difficulty": "medio"
+    }
+  ]
+}
