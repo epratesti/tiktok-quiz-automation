@@ -446,12 +446,16 @@ class QuestionGenerator:
             ("Informatica", "Autenticacao em dois fatores", "camada extra de verificacao de identidade", "A autenticacao em dois fatores acrescenta uma etapa alem da senha."),
         ]
 
-        distractors = [fact[1] for fact in facts]
+        subjects_by_category: dict[str, list[str]] = {}
+        for fact_category, fact_subject, *_ in facts:
+            subjects_by_category.setdefault(fact_category, []).append(fact_subject)
+
         questions = []
         shuffled = facts.copy()
         random.shuffle(shuffled)
         for category, subject, description, explanation in shuffled:
-            wrong_options = [item for item in distractors if item != subject]
+            same_category_subjects = subjects_by_category.get(category, [])
+            wrong_options = [item for item in same_category_subjects if item != subject]
             options = random.sample(wrong_options, k=3) + [subject]
             random.shuffle(options)
             if category.startswith("Historia"):
