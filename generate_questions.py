@@ -199,7 +199,6 @@ class QuestionGenerator:
 
                         selected.append(q)
                         categories_used.add(q.category)
-                        # Adiciona ao histórico imediatamente para evitar repetição dentro do mesmo batch
                         self.history.add_many([q])
                         logger.info(f"Selecionada ({q.source} | {q.category}): {q.question[:50]}...")
                 except Exception as e:
@@ -233,10 +232,7 @@ class QuestionGenerator:
         if len(selected) < count:
             logger.warning("Não foi possível gerar perguntas inéditas suficientes. Usando banco local de emergência.")
             emergency_qs = self._from_local_json(count - len(selected))
-                        for eq in emergency_qs:
-                            if not self.history.seen(eq):
-                                selected.append(eq)
-                                self.history.add_many([eq])
+            selected.extend(emergency_qs)
 
         return selected[:count]
 
