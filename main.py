@@ -109,4 +109,6 @@ if __name__ == "__main__":
     upload_flag = True if args.upload else None
     if args.no_upload:
         upload_flag = False
-    run_pipeline(videos=args.videos, upload=upload_flag)
+    generated = run_pipeline(videos=args.videos, upload=upload_flag)
+    if len(generated) < args.videos:
+        raise SystemExit(f"Pipeline incompleto: {len(generated)} de {args.videos} videos gerados.")

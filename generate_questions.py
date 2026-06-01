@@ -267,6 +267,7 @@ class QuestionGenerator:
             ("opentdb", self._from_open_trivia),
             ("local_json", self._from_local_json),
             ("synthetic", self._from_synthetic_conhecimentos_gerais),
+            ("procedural", self._from_procedural_conhecimentos_gerais),
         ]
 
         while len(selected) < count and attempt < max_attempts:
@@ -390,7 +391,7 @@ class QuestionGenerator:
 
     def _from_open_trivia(self, limit: int) -> list[QuizQuestion]:
         """Busca perguntas no Open Trivia DB filtrando por temas de Conhecimentos Gerais (História, Geografia, Ciência)."""
-        if not requests:
+        if not settings.ai.opentrivia_enabled or not requests:
             return []
             
         # Categorias úteis para concursos: 9 (Geral), 22 (Geografia), 23 (História), 17 (Ciência)
@@ -434,7 +435,7 @@ class QuestionGenerator:
 
     def _translate_question(self, q: dict) -> dict | None:
         """Usa OpenAI para traduzir a pergunta mantendo o sentido."""
-        if not settings.ai.openai_enabled:
+        if not settings.ai.openai_enabled or not settings.ai.openai_api_key:
             return None # Não queremos perguntas em inglês no TikTok brasileiro
             
         from openai import OpenAI
@@ -631,6 +632,145 @@ class QuestionGenerator:
                 )
             )
 
+        return questions[:limit]
+
+    def _from_procedural_conhecimentos_gerais(self, limit: int) -> list[QuizQuestion]:
+        """Gera perguntas factuais offline com alta variedade para manter a automacao ativa sem API."""
+        templates: list[tuple[str, str, str, list[tuple[str, str, str]]]] = [
+            (
+                "Geografia do Brasil",
+                "capitais_brasileiras",
+                "Qual capital brasileira corresponde ao estado de {prompt}?",
+                [
+                    ("Acre", "Rio Branco", "Rio Branco e a capital do Acre."),
+                    ("Alagoas", "Maceio", "Maceio e a capital de Alagoas."),
+                    ("Amapa", "Macapa", "Macapa e a capital do Amapa."),
+                    ("Amazonas", "Manaus", "Manaus e a capital do Amazonas."),
+                    ("Bahia", "Salvador", "Salvador e a capital da Bahia."),
+                    ("Ceara", "Fortaleza", "Fortaleza e a capital do Ceara."),
+                    ("Distrito Federal", "Brasilia", "Brasilia e a capital federal do Brasil."),
+                    ("Espirito Santo", "Vitoria", "Vitoria e a capital do Espirito Santo."),
+                    ("Goias", "Goiania", "Goiania e a capital de Goias."),
+                    ("Maranhao", "Sao Luis", "Sao Luis e a capital do Maranhao."),
+                    ("Mato Grosso", "Cuiaba", "Cuiaba e a capital de Mato Grosso."),
+                    ("Mato Grosso do Sul", "Campo Grande", "Campo Grande e a capital de Mato Grosso do Sul."),
+                    ("Minas Gerais", "Belo Horizonte", "Belo Horizonte e a capital de Minas Gerais."),
+                    ("Para", "Belem", "Belem e a capital do Para."),
+                    ("Paraiba", "Joao Pessoa", "Joao Pessoa e a capital da Paraiba."),
+                    ("Parana", "Curitiba", "Curitiba e a capital do Parana."),
+                    ("Pernambuco", "Recife", "Recife e a capital de Pernambuco."),
+                    ("Piaui", "Teresina", "Teresina e a capital do Piaui."),
+                    ("Rio de Janeiro", "Rio de Janeiro", "Rio de Janeiro e a capital do estado de mesmo nome."),
+                    ("Rio Grande do Norte", "Natal", "Natal e a capital do Rio Grande do Norte."),
+                    ("Rio Grande do Sul", "Porto Alegre", "Porto Alegre e a capital do Rio Grande do Sul."),
+                    ("Rondonia", "Porto Velho", "Porto Velho e a capital de Rondonia."),
+                    ("Roraima", "Boa Vista", "Boa Vista e a capital de Roraima."),
+                    ("Santa Catarina", "Florianopolis", "Florianopolis e a capital de Santa Catarina."),
+                    ("Sao Paulo", "Sao Paulo", "Sao Paulo e a capital do estado de mesmo nome."),
+                    ("Sergipe", "Aracaju", "Aracaju e a capital de Sergipe."),
+                    ("Tocantins", "Palmas", "Palmas e a capital do Tocantins."),
+                ],
+            ),
+            (
+                "Geografia Mundial",
+                "capitais_mundiais",
+                "Qual cidade e capital de {prompt}?",
+                [
+                    ("Argentina", "Buenos Aires", "Buenos Aires e a capital da Argentina."),
+                    ("Chile", "Santiago", "Santiago e a capital do Chile."),
+                    ("Uruguai", "Montevideu", "Montevideu e a capital do Uruguai."),
+                    ("Paraguai", "Assuncao", "Assuncao e a capital do Paraguai."),
+                    ("Peru", "Lima", "Lima e a capital do Peru."),
+                    ("Colombia", "Bogota", "Bogota e a capital da Colombia."),
+                    ("Mexico", "Cidade do Mexico", "Cidade do Mexico e a capital mexicana."),
+                    ("Canada", "Ottawa", "Ottawa e a capital do Canada."),
+                    ("Portugal", "Lisboa", "Lisboa e a capital de Portugal."),
+                    ("Espanha", "Madri", "Madri e a capital da Espanha."),
+                    ("Franca", "Paris", "Paris e a capital da Franca."),
+                    ("Italia", "Roma", "Roma e a capital da Italia."),
+                    ("Alemanha", "Berlim", "Berlim e a capital da Alemanha."),
+                    ("Japao", "Toquio", "Toquio e a capital do Japao."),
+                    ("Coreia do Sul", "Seul", "Seul e a capital da Coreia do Sul."),
+                    ("Australia", "Camberra", "Camberra e a capital da Australia."),
+                ],
+            ),
+            (
+                "Ciencia",
+                "simbolos_quimicos",
+                "Na tabela periodica, qual elemento tem simbolo {prompt}?",
+                [
+                    ("H", "Hidrogenio", "H e o simbolo do hidrogenio."),
+                    ("O", "Oxigenio", "O e o simbolo do oxigenio."),
+                    ("C", "Carbono", "C e o simbolo do carbono."),
+                    ("N", "Nitrogenio", "N e o simbolo do nitrogenio."),
+                    ("Fe", "Ferro", "Fe e o simbolo do ferro."),
+                    ("Au", "Ouro", "Au e o simbolo do ouro."),
+                    ("Ag", "Prata", "Ag e o simbolo da prata."),
+                    ("Na", "Sodio", "Na e o simbolo do sodio."),
+                    ("K", "Potassio", "K e o simbolo do potassio."),
+                    ("Ca", "Calcio", "Ca e o simbolo do calcio."),
+                    ("He", "Helio", "He e o simbolo do helio."),
+                    ("Cu", "Cobre", "Cu e o simbolo do cobre."),
+                ],
+            ),
+            (
+                "Historia Geral",
+                "seculos",
+                "A qual seculo pertence o ano {prompt}?",
+                [
+                    ("1500", "seculo XV", "O ano 1500 pertence ao seculo XV."),
+                    ("1789", "seculo XVIII", "O ano 1789 pertence ao seculo XVIII."),
+                    ("1822", "seculo XIX", "O ano 1822 pertence ao seculo XIX."),
+                    ("1888", "seculo XIX", "O ano 1888 pertence ao seculo XIX."),
+                    ("1930", "seculo XX", "O ano 1930 pertence ao seculo XX."),
+                    ("1945", "seculo XX", "O ano 1945 pertence ao seculo XX."),
+                    ("1988", "seculo XX", "O ano 1988 pertence ao seculo XX."),
+                    ("2001", "seculo XXI", "O ano 2001 pertence ao seculo XXI."),
+                ],
+            ),
+            (
+                "Lingua Portuguesa",
+                "classes_gramaticais",
+                "Qual e a classe gramatical principal da palavra '{prompt}'?",
+                [
+                    ("rapidamente", "adverbio", "Rapidamente indica modo, portanto funciona como adverbio."),
+                    ("feliz", "adjetivo", "Feliz caracteriza um ser ou estado, portanto e adjetivo."),
+                    ("cidade", "substantivo", "Cidade nomeia um lugar, portanto e substantivo."),
+                    ("correr", "verbo", "Correr expressa uma acao, portanto e verbo."),
+                    ("nos", "pronome", "Nos substitui ou acompanha nomes, portanto e pronome."),
+                    ("mas", "conjuncao", "Mas liga ideias com oposicao, portanto e conjuncao."),
+                    ("sob", "preposicao", "Sob relaciona termos, portanto e preposicao."),
+                ],
+            ),
+        ]
+
+        questions: list[QuizQuestion] = []
+        for category, topic_prefix, prompt, rows in templates:
+            answers = list(dict.fromkeys(answer for _, answer, _ in rows))
+            for clue, answer, explanation in rows:
+                wrong_options = [item for item in answers if item != answer]
+                if len(wrong_options) < 3:
+                    continue
+                options = random.sample(wrong_options, k=3) + [answer]
+                random.shuffle(options)
+                question_text = prompt.format(prompt=clue)
+                questions.append(
+                    QuizQuestion(
+                        id=self._stable_id(f"{topic_prefix}:{clue}:{answer}"),
+                        category=category,
+                        hook="Conhecimentos gerais de concurso!",
+                        question=question_text,
+                        options=options,
+                        correct_index=options.index(answer),
+                        explanation=explanation,
+                        source="procedural_general_knowledge",
+                        difficulty="medio",
+                        question_type="conhecimentos_gerais",
+                        topic=self._plain(f"{topic_prefix}:{clue}"),
+                    )
+                )
+
+        random.shuffle(questions)
         return questions[:limit]
 
     def _make_math_question(self) -> QuizQuestion:
