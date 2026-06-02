@@ -268,6 +268,7 @@ class QuestionGenerator:
             ("local_json", self._from_local_json),
             ("synthetic", self._from_synthetic_conhecimentos_gerais),
             ("procedural", self._from_procedural_conhecimentos_gerais),
+            ("dynamic", self._from_dynamic_conhecimentos_gerais),
         ]
 
         while len(selected) < count and attempt < max_attempts:
@@ -294,6 +295,18 @@ class QuestionGenerator:
                     logger.debug("Fonte %s falhou: %s", source_name, exc)
 
         if len(selected) < count:
+            for q in self._from_dynamic_conhecimentos_gerais(count * 40):
+                if self._can_select_question(q, selected, categories_used, topics_used, target_type):
+                    selected.append(q)
+                    categories_used.add(q.category)
+                    if q.topic:
+                        topics_used.add(q.topic)
+                    self.history.add_many([q])
+                    logger.info("Selecionada (%s | %s): %s...", q.source, q.category, q.question[:50])
+                    if len(selected) >= count:
+                        break
+
+        if len(selected) < count:
             logger.warning("Nao foi possivel gerar %s perguntas ineditas do tipo %s.", count, target_type)
 
         return selected[:count]
@@ -315,8 +328,12 @@ class QuestionGenerator:
         if question.topic and question.topic in topics_used:
             return False
 
-        is_math = "matematica" in self._plain(question.category) or "raciocinio logico" in self._plain(question.category)
-        has_math = any("matematica" in self._plain(item.category) or "raciocinio logico" in self._plain(item.category) for item in selected)
+        plain_category = self._plain(question.category)
+        is_math = "matematica" in plain_category or "raciocinio_logico" in plain_category
+        has_math = any(
+            "matematica" in self._plain(item.category) or "raciocinio_logico" in self._plain(item.category)
+            for item in selected
+        )
         return not (is_math and has_math)
 
     def _select_question_type(self) -> str:
@@ -772,6 +789,203 @@ class QuestionGenerator:
 
         random.shuffle(questions)
         return questions[:limit]
+
+    def _from_dynamic_conhecimentos_gerais(self, limit: int) -> list[QuizQuestion]:
+        """Gera perguntas offline por combinacao para evitar esgotar a automacao."""
+        questions: list[QuizQuestion] = []
+        seen_ids: set[str] = set()
+
+        def make_options(correct: int, spread: int = 12, minimum: int = 0) -> tuple[list[str], int]:
+            values = {correct}
+            attempts = 0
+            while len(values) < 4 and attempts < 80:
+                attempts += 1
+                delta = random.randint(1, spread)
+                candidate = correct + random.choice([-1, 1]) * delta
+                if candidate >= minimum:
+                    values.add(candidate)
+            while len(values) < 4:
+                values.add(correct + len(values) + spread)
+            options = [str(value) for value in values]
+            random.shuffle(options)
+            return options, options.index(str(correct))
+
+        def build(
+            category: str,
+            topic: str,
+            question: str,
+            options: list[str],
+            correct_index: int,
+            explanation: str,
+        ) -> QuizQuestion:
+            return QuizQuestion(
+                id=self._stable_id(f"dynamic:{topic}:{question}:{options[correct_index]}"),
+                category=category,
+                hook="Conhecimentos gerais de concurso!",
+                question=question,
+                options=options,
+                correct_index=correct_index,
+                explanation=explanation,
+                source="dynamic_general_knowledge",
+                difficulty="medio",
+                question_type="conhecimentos_gerais",
+                topic=self._plain(topic),
+            )
+
+        def percentage_question() -> QuizQuestion:
+            base = random.randrange(80, 1201, 20)
+            pct = random.choice([5, 10, 15, 20, 25, 30, 40, 50])
+            correct = base * pct // 100
+            options, correct_index = make_options(correct, spread=max(8, correct // 3), minimum=1)
+            return build(
+                "Matematica Basica",
+                f"porcentagem_{base}_{pct}",
+                f"Quanto e {pct}% de {base}?",
+                options,
+                correct_index,
+                f"{pct}% de {base} e igual a {correct}.",
+            )
+
+        def storage_question() -> QuizQuestion:
+            gb = random.randint(2, 128)
+            correct = gb * 1024
+            options, correct_index = make_options(correct, spread=512, minimum=1)
+            return build(
+                "Informatica",
+                f"armazenamento_{gb}",
+                f"Em informatica, quantos MB existem em {gb} GB?",
+                options,
+                correct_index,
+                f"Usando 1 GB = 1024 MB, {gb} GB equivalem a {correct} MB.",
+            )
+
+        def discount_question() -> QuizQuestion:
+            price = random.randrange(50, 1001, 10)
+            pct = random.choice([5, 10, 15, 20, 25, 30, 35, 40])
+            discount = price * pct // 100
+            correct = price - discount
+            options, correct_index = make_options(correct, spread=max(10, discount), minimum=1)
+            return build(
+                "Economia",
+                f"desconto_{price}_{pct}",
+                f"Um produto de {price} reais com {pct}% de desconto sai por quanto?",
+                options,
+                correct_index,
+                f"O desconto e {discount} reais; o preco final fica {correct} reais.",
+            )
+
+        def science_question() -> QuizQuestion:
+            atomic_number = random.randint(3, 60)
+            options, correct_index = make_options(atomic_number, spread=8, minimum=1)
+            return build(
+                "Ciencia",
+                f"numero_atomico_{atomic_number}",
+                f"Um atomo neutro com numero atomico {atomic_number} tem quantos protons?",
+                options,
+                correct_index,
+                f"O numero atomico indica a quantidade de protons: {atomic_number}.",
+            )
+
+        def decade_question() -> QuizQuestion:
+            year = random.randint(1501, 2025)
+            decade = (year // 10) * 10
+            correct = f"decada de {decade}"
+            wrong_values = [decade - 20, decade - 10, decade + 10, decade + 20]
+            options = [correct] + [f"decada de {value}" for value in random.sample(wrong_values, 3)]
+            random.shuffle(options)
+            return build(
+                "Historia Geral",
+                f"decada_{year}",
+                f"O ano {year} pertence a qual decada?",
+                options,
+                options.index(correct),
+                f"O ano {year} fica na decada de {decade}.",
+            )
+
+        def timezone_question() -> QuizQuestion:
+            hour = random.randint(0, 23)
+            diff = random.choice([-4, -3, -2, -1, 1, 2, 3, 4])
+            correct = (hour + diff) % 24
+            options, correct_index = make_options(correct, spread=5, minimum=0)
+            direction = "a frente" if diff > 0 else "atras"
+            return build(
+                "Geografia",
+                f"fuso_{hour}_{diff}",
+                f"Se sao {hour}h e outra cidade esta {abs(diff)}h {direction}, que horas sao la?",
+                options,
+                correct_index,
+                f"Ajustando o fuso horario, o resultado e {correct}h.",
+            )
+
+        def sequence_question() -> QuizQuestion:
+            start = random.randint(2, 40)
+            step = random.randint(2, 12)
+            values = [start + step * index for index in range(4)]
+            correct = start + step * 4
+            options, correct_index = make_options(correct, spread=step * 3, minimum=1)
+            return build(
+                "Raciocinio Logico",
+                f"sequencia_{start}_{step}",
+                f"Qual e o proximo numero da sequencia {values[0]}, {values[1]}, {values[2]}, {values[3]}?",
+                options,
+                correct_index,
+                f"A sequencia aumenta de {step} em {step}; o proximo numero e {correct}.",
+            )
+
+        def portuguese_question() -> QuizQuestion:
+            words = [
+                "constitucional",
+                "administrativo",
+                "concurso",
+                "cidadania",
+                "geografia",
+                "economia",
+                "informatica",
+                "literatura",
+                "democracia",
+                "republica",
+                "energia",
+                "conhecimento",
+            ]
+            word = random.choice(words)
+            position = random.randint(1, len(word))
+            correct = word[position - 1]
+            letters = list(dict.fromkeys(word))
+            alphabet = list("abcdefghijklmnopqrstuvwxyz")
+            wrong_letters = [letter for letter in alphabet if letter != correct and letter not in letters[:1]]
+            options = [correct] + random.sample(wrong_letters, 3)
+            random.shuffle(options)
+            return build(
+                "Lingua Portuguesa",
+                f"letra_{word}_{position}",
+                f"Na palavra '{word}', qual e a letra da posicao {position}?",
+                options,
+                options.index(correct),
+                f"Contando da esquerda para a direita, a letra da posicao {position} e '{correct}'.",
+            )
+
+        builders = [
+            percentage_question,
+            storage_question,
+            discount_question,
+            science_question,
+            decade_question,
+            timezone_question,
+            sequence_question,
+            portuguese_question,
+        ]
+
+        attempts = 0
+        max_attempts = max(200, limit * 60)
+        while len(questions) < limit and attempts < max_attempts:
+            attempts += 1
+            question = random.choice(builders)()
+            if question.id in seen_ids:
+                continue
+            seen_ids.add(question.id)
+            questions.append(question)
+
+        return questions
 
     def _make_math_question(self) -> QuizQuestion:
         """Gera perguntas de matemática de nível médio/concurso."""
